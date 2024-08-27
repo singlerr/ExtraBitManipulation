@@ -1,9 +1,9 @@
 package com.phylogeny.extrabitmanipulation.client;
 
-import net.minecraft.client.particle.IParticleFactory;
 import net.minecraft.client.particle.Particle;
+import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.ParticleSplash;
-import net.minecraft.world.World;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -11,7 +11,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 public class ParticleSplashBit extends ParticleSplash
 {
 	
-	protected ParticleSplashBit(World worldIn, double xCoordIn, double yCoordIn, double zCoordIn, double xSpeedIn, double ySpeedIn, double zSpeedIn)
+	protected ParticleSplashBit(Level worldIn, double xCoordIn, double yCoordIn, double zCoordIn, double xSpeedIn, double ySpeedIn, double zSpeedIn)
 	{
 		super(worldIn, xCoordIn, yCoordIn, zCoordIn, xSpeedIn, ySpeedIn, zSpeedIn);
 	}
@@ -38,10 +38,10 @@ public class ParticleSplashBit extends ParticleSplash
 	}
 	
 	@SideOnly(Side.CLIENT)
-	public static class Factory implements IParticleFactory
+	public static class Factory implements ParticleProvider
 	{
 		@Override
-		public Particle createParticle(int particleID, World worldIn, double xCoordIn, double yCoordIn,
+		public Particle createParticle(int particleID, Level worldIn, double xCoordIn, double yCoordIn,
 				double zCoordIn, double xSpeedIn, double ySpeedIn, double zSpeedIn, int... parameters)
 		{
 			return new ParticleSplashBit(worldIn, xCoordIn, yCoordIn, zCoordIn, xSpeedIn, ySpeedIn, zSpeedIn);

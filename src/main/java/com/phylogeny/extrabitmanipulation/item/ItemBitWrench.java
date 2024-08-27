@@ -16,17 +16,16 @@ import mod.chiselsandbits.api.IBitBrush;
 import mod.chiselsandbits.api.IChiselAndBitsAPI;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.util.ITooltipFlag;
+import net.minecraft.core.BlockPos;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentTranslation;
-import net.minecraft.world.World;
-
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.Level;
 import com.phylogeny.extrabitmanipulation.ExtraBitManipulation;
 import com.phylogeny.extrabitmanipulation.api.ChiselsAndBitsAPIAccess;
 import com.phylogeny.extrabitmanipulation.helper.BitInventoryHelper;
@@ -56,10 +55,10 @@ public class ItemBitWrench extends ItemBitToolBase
 	}
 	
 	@Override
-	public EnumActionResult onItemUse(EntityPlayer player, World world, BlockPos pos,
+	public EnumActionResult onItemUse(EntityPlayer player, Level world, BlockPos pos,
 			EnumHand hand, EnumFacing side, float hitX, float hitY, float hitZ)
 	{
-		if (world.isRemote)
+		if (world.isClientSide)
 		{
 			useWrench(player.getHeldItem(hand), player, world, pos, side, Configs.oneBitTypeInversionRequirement, KeyBindingsExtraBitManipulation.SHIFT.isKeyDown());
 			ExtraBitManipulation.packetNetwork.sendToServer(new PacketUseWrench(pos, side,
@@ -68,7 +67,7 @@ public class ItemBitWrench extends ItemBitToolBase
 		return EnumActionResult.SUCCESS;
 	}
 	
-	public EnumActionResult useWrench(ItemStack stack, EntityPlayer player, World world, BlockPos pos,
+	public EnumActionResult useWrench(ItemStack stack, EntityPlayer player, Level world, BlockPos pos,
 			EnumFacing side, boolean oneBitTypeInversionRequirement, boolean invertDirection)
 	{
 		initialize(stack);
@@ -259,7 +258,7 @@ public class ItemBitWrench extends ItemBitToolBase
 				bitAccess.commitChanges(true);
 				
 				damageTool(stack, player);
-				if (!creativeMode && !world.isRemote && canInvert)
+				if (!creativeMode && !world.isClientSide && canInvert)
 				{
 					if (bitCountTake > 0)
 						BitInventoryHelper.removeOrAddInventoryBits(api, player, invertBitStack, bitCountTake, false);
@@ -280,7 +279,7 @@ public class ItemBitWrench extends ItemBitToolBase
 	}
 	
 	@Override
-	public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flag)
+	public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<String> tooltip, TooltipFlag flag)
 	{
 		int mode = getMode(stack);
 		String text = MODE_TEXT[mode].toLowerCase();

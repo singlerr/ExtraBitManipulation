@@ -6,8 +6,7 @@ import java.util.List;
 
 import mezz.jei.api.IGuiHelper;
 import net.minecraft.client.Minecraft;
-import net.minecraft.item.ItemStack;
-
+import net.minecraft.world.item.ItemStack;
 import com.phylogeny.extrabitmanipulation.api.jei.InfoRecipeBase;
 import com.phylogeny.extrabitmanipulation.client.ClientHelper;
 import com.phylogeny.extrabitmanipulation.client.GuiHelper;
@@ -40,12 +39,12 @@ public class ModelInfoRecipe extends InfoRecipeBase
 		ClientHelper.bindTexture(image);
 		GuiHelper.drawTexturedRect(imageBox.getMinX(), imageBox.getMinY(), imageBox.getMaxX(), imageBox.getMaxY());
 		xPos = 69;
-		int nameWidth = minecraft.fontRenderer.getStringWidth(name);
+		int nameWidth = minecraft.font.width(name);
 		if (nameWidth < 103)
 			xPos += 52 - nameWidth * 0.5;
 		
-		yPos = slotDrawable.getHeight() / 2 - minecraft.fontRenderer.FONT_HEIGHT / 2;
-		minecraft.fontRenderer.drawString(name, xPos, yPos, Color.black.getRGB());
+		yPos = slotDrawable.getHeight() / 2 - minecraft.font.lineHeight / 2;
+		minecraft.font.draw(name, xPos, yPos, Color.black.getRGB());
 	}
 	
 }

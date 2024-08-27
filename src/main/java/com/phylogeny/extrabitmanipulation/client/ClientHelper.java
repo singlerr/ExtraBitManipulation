@@ -1,19 +1,19 @@
 package com.phylogeny.extrabitmanipulation.client;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.particle.IParticleFactory;
-import net.minecraft.client.renderer.BlockModelShapes;
+import net.minecraft.client.color.item.ItemColors;
+import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.renderer.RenderItem;
-import net.minecraft.client.renderer.color.ItemColors;
+import net.minecraft.client.renderer.block.BlockModelShaper;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemStack;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.IThreadListener;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.TextComponentString;
-import net.minecraft.world.World;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.HitResult;
 
 public class ClientHelper
 {
@@ -28,9 +28,9 @@ public class ClientHelper
 		return getMinecraft();
 	}
 	
-	public static World getWorld()
+	public static Level getWorld()
 	{
-		return getMinecraft().world;
+		return getMinecraft().level;
 	}
 	
 	public static EntityPlayer getPlayer()
@@ -43,12 +43,12 @@ public class ClientHelper
 		return getPlayer().getHeldItemMainhand();
 	}
 	
-	public static RayTraceResult getObjectMouseOver()
+	public static HitResult getObjectMouseOver()
 	{
-		return getMinecraft().objectMouseOver;
+		return getMinecraft().hitResult;
 	}
 	
-	public static void spawnParticle(World worldIn, Vec3d particlePos, IParticleFactory particleFactory)
+	public static void spawnParticle(Level worldIn, Vec3d particlePos, ParticleProvider particleFactory)
 	{
 		getMinecraft().effectRenderer.addEffect(particleFactory.createParticle(0, worldIn, particlePos.x, particlePos.y, particlePos.z, 0, 0, 0));
 	}
@@ -60,7 +60,7 @@ public class ClientHelper
 	
 	public static void bindTexture(ResourceLocation resource)
 	{
-		getMinecraft().getTextureManager().bindTexture(resource);
+		getMinecraft().getTextureManager().bind(resource);
 	}
 	
 	public static RenderItem getRenderItem()
@@ -70,12 +70,12 @@ public class ClientHelper
 	
 	public static RenderManager getRenderManager()
 	{
-		return getMinecraft().getRenderManager();
+		return getMinecraft().getEntityRenderDispatcher();
 	}
 	
-	public static BlockModelShapes getBlockModelShapes()
+	public static BlockModelShaper getBlockModelShapes()
 	{
-		return getMinecraft().getBlockRendererDispatcher().getBlockModelShapes();
+		return getMinecraft().getBlockRenderer().getBlockModelShaper();
 	}
 	
 	public static ItemColors getItemColors()

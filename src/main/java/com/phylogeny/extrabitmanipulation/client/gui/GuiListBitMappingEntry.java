@@ -5,25 +5,23 @@ import java.util.ArrayList;
 import mod.chiselsandbits.api.APIExceptions.InvalidBitItem;
 import mod.chiselsandbits.api.IBitBrush;
 import mod.chiselsandbits.api.IChiselAndBitsAPI;
-import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiListExtended;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.RenderHelper;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
-import net.minecraft.item.ItemStack;
-
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 import org.lwjgl.opengl.GL11;
-
+import com.mojang.blaze3d.platform.Lighting;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.Tesselator;
 import com.phylogeny.extrabitmanipulation.ExtraBitManipulation;
 import com.phylogeny.extrabitmanipulation.api.ChiselsAndBitsAPIAccess;
 import com.phylogeny.extrabitmanipulation.client.ClientHelper;
@@ -114,7 +112,7 @@ public class GuiListBitMappingEntry implements GuiListExtended.IGuiListEntry
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 			ClientHelper.bindTexture(bitMappingScreen.GUI_TEXTURE);
 			bitMappingScreen.drawTexturedModalRect(x, y, 0, 219, listWidth, slotHeight);
-			RenderHelper.enableGUIStandardItemLighting();
+			Lighting.enableGUIStandardItemLighting();
 			if (!getBitStack().isEmpty())
 			{
 				mc.getRenderItem().renderItemIntoGUI(getBitStack(), x + 44, y + 2);
@@ -124,7 +122,7 @@ public class GuiListBitMappingEntry implements GuiListExtended.IGuiListEntry
 				drawCross(x, y);
 			}
 			RenderState.renderStateIntoGUI(state, x, y);
-			RenderHelper.disableStandardItemLighting();
+			Lighting.turnOff();
 		}
 	}
 	
@@ -133,22 +131,22 @@ public class GuiListBitMappingEntry implements GuiListExtended.IGuiListEntry
 		GlStateManager.pushMatrix();
 		GlStateManager.disableTexture2D();
 		GlStateManager.color(1, 0, 0);
-		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder buffer = tessellator.getBuffer();
+		Tesselator tessellator = Tesselator.getInstance();
+		BufferBuilder buffer = tessellator.getBuilder();
 		ScaledResolution scaledresolution = new ScaledResolution(mc);
 		GL11.glLineWidth(scaledresolution.getScaleFactor() * 2);
-		buffer.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
+		buffer.begin(GL11.GL_LINES, DefaultVertexFormat.POSITION_COLOR);
 		int x2 = x + 44;
 		int y2 = y + 2;
 		int x3 = x2 + 16;
 		int y3 = y2 + 16;
-		buffer.pos(x2, y2, 0).color(255, 0, 0, 255).endVertex();
-		buffer.pos(x3, y3, 0).color(255, 0, 0, 255).endVertex();
-		tessellator.draw();
-		buffer.begin(GL11.GL_LINES, DefaultVertexFormats.POSITION_COLOR);
-		buffer.pos(x3, y2, 0).color(255, 0, 0, 255).endVertex();
-		buffer.pos(x2, y3, 0).color(255, 0, 0, 255).endVertex();
-		tessellator.draw();
+		buffer.vertex(x2, y2, 0).color(255, 0, 0, 255).endVertex();
+		buffer.vertex(x3, y3, 0).color(255, 0, 0, 255).endVertex();
+		tessellator.end();
+		buffer.begin(GL11.GL_LINES, DefaultVertexFormat.POSITION_COLOR);
+		buffer.vertex(x3, y2, 0).color(255, 0, 0, 255).endVertex();
+		buffer.vertex(x2, y3, 0).color(255, 0, 0, 255).endVertex();
+		tessellator.end();
 		GlStateManager.enableTexture2D();
 		GlStateManager.popMatrix();
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
@@ -161,7 +159,7 @@ public class GuiListBitMappingEntry implements GuiListExtended.IGuiListEntry
 	@Override
 	public boolean mousePressed(int slotIndex, int mouseX, int mouseY, int mouseEvent, int relativeX, int relativeY)
 	{
-		ItemStack cursorStack = mc.player.inventory.getItemStack();
+		ItemStack cursorStack = mc.player.inventory.getCarried();
 		boolean inSlotVerticalRange = relativeY >= 0 && relativeY < 18;
 		boolean stateSlotClicked = relativeX > -39 && relativeX < -20 && inSlotVerticalRange;
 		boolean bitSlotClicked = relativeX >= 0 && relativeX < 18 && inSlotVerticalRange;
@@ -170,7 +168,7 @@ public class GuiListBitMappingEntry implements GuiListExtended.IGuiListEntry
 			ItemStack stack = ItemStack.EMPTY;
 			if (stateSlotClicked)
 			{
-				Item item = Item.getItemFromBlock(state.getBlock());
+				Item item = Item.byBlock(state.getBlock());
 				if (item != Items.AIR && item instanceof ItemBlock)
 				{
 					stack = new ItemStack(item, 64, item.getHasSubtypes() ? state.getBlock().getMetaFromState(state) : 0);
@@ -184,7 +182,7 @@ public class GuiListBitMappingEntry implements GuiListExtended.IGuiListEntry
 			}
 			if (!stack.isEmpty())
 			{
-				mc.player.inventory.setItemStack(stack);
+				mc.player.inventory.setCarried(stack);
 				ExtraBitManipulation.packetNetwork.sendToServer(new PacketCursorStack(stack));
 			}
 		}
@@ -208,7 +206,7 @@ public class GuiListBitMappingEntry implements GuiListExtended.IGuiListEntry
 			}
 			else if (cursorStack.getItem() != null)
 			{
-				Block block = Block.getBlockFromItem(cursorStack.getItem());
+				Block block = Block.byItem(cursorStack.getItem());
 				if (block != Blocks.AIR)
 				{
 					try

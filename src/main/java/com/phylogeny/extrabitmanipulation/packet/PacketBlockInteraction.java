@@ -1,8 +1,8 @@
 package com.phylogeny.extrabitmanipulation.packet;
 
 import io.netty.buffer.ByteBuf;
+import net.minecraft.core.BlockPos;
 import net.minecraft.util.EnumFacing;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
@@ -24,7 +24,7 @@ public abstract class PacketBlockInteraction implements IMessage
 	@Override
 	public void toBytes(ByteBuf buffer)
 	{
-		buffer.writeLong(pos.toLong());
+		buffer.writeLong(pos.asLong());
 		buffer.writeInt(side.ordinal());
 		buffer.writeDouble(hit.x);
 		buffer.writeDouble(hit.y);
@@ -34,7 +34,7 @@ public abstract class PacketBlockInteraction implements IMessage
 	@Override
 	public void fromBytes(ByteBuf buffer)
 	{
-		pos = BlockPos.fromLong(buffer.readLong());
+		pos = BlockPos.of(buffer.readLong());
 		side = EnumFacing.getFront(buffer.readInt());
 		hit = new Vec3d(buffer.readDouble(), buffer.readDouble(), buffer.readDouble());
 	}

@@ -13,6 +13,9 @@ import org.lwjgl.util.glu.Quadric;
 import org.lwjgl.util.glu.Sphere;
 
 import com.google.common.base.Stopwatch;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.Tesselator;
 import com.phylogeny.extrabitmanipulation.ExtraBitManipulation;
 import com.phylogeny.extrabitmanipulation.api.ChiselsAndBitsAPIAccess;
 import com.phylogeny.extrabitmanipulation.armor.LayerChiseledArmor;
@@ -59,29 +62,26 @@ import mod.chiselsandbits.api.ModKeyBinding;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.ModelBase;
 import net.minecraft.client.model.ModelBiped;
-import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.RenderGlobal;
-import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.SimpleTexture;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraft.entity.Entity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.NonNullList;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumFacing.Axis;
 import net.minecraft.util.EnumFacing.AxisDirection;
 import net.minecraft.util.EnumHand;
-import net.minecraft.util.NonNullList;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
-import net.minecraft.world.World;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.HitResult;
 import net.minecraftforge.client.event.DrawBlockHighlightEvent;
 import net.minecraftforge.client.event.MouseEvent;
 import net.minecraftforge.client.event.RenderLivingEvent;
@@ -365,8 +365,8 @@ public class ClientEventHandler
 			Item item = stack.getItem();
 			if (event.isButtonstate() && ItemStackHelper.isChiseledArmorItem(item))
 			{
-				RayTraceResult target = ClientHelper.getObjectMouseOver();
-				if (target != null && target.typeOfHit == RayTraceResult.Type.BLOCK)
+				HitResult target = ClientHelper.getObjectMouseOver();
+				if (target != null && target.typeOfHit == HitResult.Type.BLOCK)
 				{
 					NBTTagCompound nbt = ItemStackHelper.getNBTOrNew(stack);
 					int mode = BitToolSettingsHelper.getArmorMode(nbt);
@@ -396,11 +396,11 @@ public class ClientEventHandler
 				if (event.isButtonstate() || (drawnMode && drawnStartPoint != null))
 				{
 					boolean removeBits = isArmor ? true : ((ItemSculptingTool) item).removeBits();
-					RayTraceResult target = ClientHelper.getObjectMouseOver();
+					HitResult target = ClientHelper.getObjectMouseOver();
 					boolean shiftDown = KeyBindingsExtraBitManipulation.SHIFT.isKeyDown();
-					if (target != null && target.typeOfHit != RayTraceResult.Type.MISS)
+					if (target != null && target.typeOfHit != HitResult.Type.MISS)
 					{
-						if (target.typeOfHit == RayTraceResult.Type.BLOCK)
+						if (target.typeOfHit == HitResult.Type.BLOCK)
 						{
 							BlockPos pos = target.getBlockPos();
 							EnumFacing side = target.sideHit;
@@ -607,10 +607,10 @@ public class ClientEventHandler
 					
 					if (event.isButtonstate() || (drawnMode && drawnStartPointModelingTool != null))
 					{
-						RayTraceResult target = ClientHelper.getObjectMouseOver();
-						if (target != null && target.typeOfHit != RayTraceResult.Type.MISS)
+						HitResult target = ClientHelper.getObjectMouseOver();
+						if (target != null && target.typeOfHit != HitResult.Type.MISS)
 						{
-							if (target.typeOfHit == RayTraceResult.Type.BLOCK)
+							if (target.typeOfHit == HitResult.Type.BLOCK)
 							{
 								BlockPos pos = target.getBlockPos();
 								Vec3d hit = target.hitVec;
@@ -811,14 +811,14 @@ public class ClientEventHandler
 	public void renderBoxesSpheresAndOverlays(RenderWorldLastEvent event)
 	{
 		EntityPlayer player = ClientHelper.getPlayer();
-		World world = player.world;
+		Level world = player.world;
 		ItemStack stack = player.getHeldItemMainhand();
 		if (stack.isEmpty())
 			return;
 		
-		RayTraceResult target = ClientHelper.getObjectMouseOver();
+		HitResult target = ClientHelper.getObjectMouseOver();
 		Item item = stack.getItem();
-		boolean hitBlock = target != null && target.typeOfHit.equals(RayTraceResult.Type.BLOCK);
+		boolean hitBlock = target != null && target.typeOfHit.equals(HitResult.Type.BLOCK);
 		boolean isArmor = ItemStackHelper.isChiseledArmorItem(item);
 		if (!isArmor && (!hitBlock || !ItemStackHelper.isBitToolItem(item)))
 			return;
@@ -828,8 +828,8 @@ public class ClientEventHandler
 		double playerX = player.lastTickPosX + (player.posX - player.lastTickPosX) * ticks;
 		double playerY = player.lastTickPosY + (player.posY - player.lastTickPosY) * ticks;
 		double playerZ = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * ticks;
-		Tessellator t = Tessellator.getInstance();
-		BufferBuilder buffer = t.getBuffer();
+		Tesselator t = Tesselator.getInstance();
+		BufferBuilder buffer = t.getBuilder();
 		if (isArmor)
 		{
 			NBTTagCompound nbt = ItemStackHelper.getNBTOrNew(stack);
@@ -862,7 +862,7 @@ public class ClientEventHandler
 			boolean upDown = side <= 1;
 			boolean eastWest = side >= 4;
 			boolean northSouth = !upDown && !eastWest;
-			AxisAlignedBB box = new AxisAlignedBB(eastWest ? hit.x : x, upDown ? hit.y : y, northSouth ? hit.z : z,
+			AABB box = new AABB(eastWest ? hit.x : x, upDown ? hit.y : y, northSouth ? hit.z : z,
 					eastWest ? hit.x : x + 1, upDown ? hit.y : y + 1, northSouth ? hit.z : z + 1);
 			
 			int offsetX = Math.abs(dir.getFrontOffsetX());
@@ -949,7 +949,7 @@ public class ClientEventHandler
 			renderTexturedSide(t, buffer, side, northSouth, box, minU, maxU, minV, maxV, 1);
 			GlStateManager.popMatrix();
 			
-			AxisAlignedBB box3 = world.getBlockState(pos).getSelectedBoundingBox(world, pos);
+			AABB box3 = world.getBlockState(pos).getSelectedBoundingBox(world, pos);
 			for (int s = 0; s < 6; s++)
 			{
 				if (s != side)
@@ -959,7 +959,7 @@ public class ClientEventHandler
 					eastWest = s >= 4;
 					northSouth = !upDown && !eastWest;
 					dir = EnumFacing.getFront(s);
-					box = new AxisAlignedBB(eastWest ? (s == 5 ? box3.maxX : box3.minX) : x,
+					box = new AABB(eastWest ? (s == 5 ? box3.maxX : box3.minX) : x,
 														upDown ? (s == 1 ? box3.maxY : box3.minY) : y,
 														northSouth ? (s == 3 ? box3.maxZ : box3.minZ) : z,
 														eastWest ? (s == 4 ? box3.minX : box3.maxX) : x + 1,
@@ -1128,7 +1128,7 @@ public class ClientEventHandler
 					double r = BitToolSettingsHelper.getSemiDiameter(nbt) * Utility.PIXEL_D;
 					ConfigShapeRenderPair configPair = Configs.itemShapeMap.get(toolItem);
 					ConfigShapeRender configBox = configPair.boundingBox;
-					AxisAlignedBB box = null, shapeBox = null;
+					AABB box = null, shapeBox = null;
 					double x3 = x + x2 * Utility.PIXEL_D;
 					double y3 = y + y2 * Utility.PIXEL_D;
 					double z3 = z + z2 * Utility.PIXEL_D;
@@ -1166,7 +1166,7 @@ public class ClientEventHandler
 							{
 								z4 += Utility.PIXEL_D;
 							}
-							box = new AxisAlignedBB(x4, y4, z4, x3, y3, z3);
+							box = new AABB(x4, y4, z4, x3, y3, z3);
 						}
 						else
 						{
@@ -1183,14 +1183,14 @@ public class ClientEventHandler
 								vecOffset = BitAreaHelper.getBitGridOffset(dir, inside, hitX, hitY, hitZ, removeBits);
 								r -= f;
 							}
-							box = new AxisAlignedBB(x - r, y - r, z - r, x + r + Utility.PIXEL_D, y + r + Utility.PIXEL_D, z + r + Utility.PIXEL_D)
-										.offset(x2 * Utility.PIXEL_D + f * vecOffset.x,
+							box = new AABB(x - r, y - r, z - r, x + r + Utility.PIXEL_D, y + r + Utility.PIXEL_D, z + r + Utility.PIXEL_D)
+										.move(x2 * Utility.PIXEL_D + f * vecOffset.x,
 												y2 * Utility.PIXEL_D + f * vecOffset.y,
 												z2 * Utility.PIXEL_D + f * vecOffset.z);
 							boolean placementOffset = BitToolSettingsHelper.isShapeOffset(nbt) && !removeBits && mode != 2;
 							double r2 = r + (targetBitGrid ? Utility.PIXEL_D * 0.5 : 0);
 							if (placementOffset)
-								box = box.offset(dir.getFrontOffsetX() * r2, dir.getFrontOffsetY() * r2, dir.getFrontOffsetZ() * r2);
+								box = box.move(dir.getFrontOffsetX() * r2, dir.getFrontOffsetY() * r2, dir.getFrontOffsetZ() * r2);
 							
 							if (targetBitGrid && mode != 2)
 							{
@@ -1206,30 +1206,30 @@ public class ClientEventHandler
 							}
 						}
 						if (fixedNotSym)
-							shapeBox = box.grow(0);
+							shapeBox = box.inflate(0);
 						
 						if (mode == 0)
 						{
-							BlockPos pos2 = !removeBits && !inside ? pos.offset(dir) : pos;
-							AxisAlignedBB box2 = !removeBits ? new AxisAlignedBB(pos2) :
+							BlockPos pos2 = !removeBits && !inside ? pos.relative(dir) : pos;
+							AABB box2 = !removeBits ? new AABB(pos2) :
 								world.getBlockState(pos2).getSelectedBoundingBox(world, pos2);
 							box = limitBox(box, box2);
 						}
 						if (configBox.renderOuterShape)
-							RenderGlobal.drawSelectionBoundingBox(box.grow(BOUNDING_BOX_OFFSET).offset(-playerX, -playerY, -playerZ),
+							RenderGlobal.drawSelectionBoundingBox(box.inflate(BOUNDING_BOX_OFFSET).move(-playerX, -playerY, -playerZ),
 									configBox.red, configBox.green, configBox.blue, configBox.outerShapeAlpha);
 						
 						if (configBox.renderInnerShape)
 						{
 							GlStateManager.depthFunc(GL11.GL_GREATER);
-							RenderGlobal.drawSelectionBoundingBox(box.grow(BOUNDING_BOX_OFFSET).offset(-playerX, -playerY, -playerZ),
+							RenderGlobal.drawSelectionBoundingBox(box.inflate(BOUNDING_BOX_OFFSET).move(-playerX, -playerY, -playerZ),
 									configBox.red, configBox.green, configBox.blue, configBox.innerShapeAlpha);
 							GlStateManager.depthFunc(GL11.GL_LEQUAL);
 						}
 						GlStateManager.popMatrix();
 					}
 					if (!fixedNotSym && box != null)
-						shapeBox = box.grow(0);
+						shapeBox = box.inflate(0);
 					
 					boolean isHollow = BitToolSettingsHelper.isHollowShape(nbt, removeBits);
 					boolean isOpen = isHollow && BitToolSettingsHelper.areEndsOpen(nbt);
@@ -1252,9 +1252,9 @@ public class ClientEventHandler
 					BitToolSettingsHelper.getModelSnapMode(stack.getTagCompound()));
 			if (!boxSet.isEmpty())
 			{
-				renderBoundingBox(boxSet.getBoundingBox().offset(-playerX, -playerY, -playerZ), 1, 1, 1, 115);
+				renderBoundingBox(boxSet.getBoundingBox().move(-playerX, -playerY, -playerZ), 1, 1, 1, 115);
 				if (boxSet.hasPoint())
-					renderBoundingBox(boxSet.getPoint().offset(-playerX, -playerY, -playerZ), 1, 1, 1, 155);
+					renderBoundingBox(boxSet.getPoint().move(-playerX, -playerY, -playerZ), 1, 1, 1, 155);
 			}
 			glEnd();
 		}
@@ -1267,7 +1267,7 @@ public class ClientEventHandler
 				if (mode == 0)
 				{
 					EnumFacing facingBox = player.getHorizontalFacing().getOpposite();
-					AxisAlignedBB box = ItemChiseledArmor.getBodyPartTemplateBox(player, dir, pos, hit,
+					AABB box = ItemChiseledArmor.getBodyPartTemplateBox(player, dir, pos, hit,
 							BitToolSettingsHelper.getArmorScale(nbt), BitToolSettingsHelper.getArmorMovingPart(nbt, (ItemChiseledArmor) item));
 					if (box != null)
 						renderBodyPartTemplate(playerX, playerY, playerZ, facingBox, t, buffer, box, 1.0F);
@@ -1283,7 +1283,7 @@ public class ClientEventHandler
 		}
 	}
 	
-	private AxisAlignedBB getDrawnArmorCollectionBox(EntityPlayer player, NBTTagCompound nbt, EnumFacing dir, BlockPos pos, Vec3d hit)
+	private AABB getDrawnArmorCollectionBox(EntityPlayer player, NBTTagCompound nbt, EnumFacing dir, BlockPos pos, Vec3d hit)
 	{
 		boolean targetBits = BitToolSettingsHelper.areArmorBitsTargeted(nbt);
 		double x3 = 0, y3 = 0, z3 = 0;
@@ -1370,14 +1370,14 @@ public class ClientEventHandler
 		{
 			z4 += offset;
 		}
-		return new AxisAlignedBB(x4, y4, z4, x3, y3, z3);
+		return new AABB(x4, y4, z4, x3, y3, z3);
 	}
 	
 	private void renderBodyPartTemplate(double playerX, double playerY, double playerZ,
-			EnumFacing facingBox, Tessellator t, BufferBuilder buffer, AxisAlignedBB box, float redBlue)
+			EnumFacing facingBox, Tesselator t, BufferBuilder buffer, AABB box, float redBlue)
 	{
 		glStart();
-		box = box.offset(-playerX, -playerY, -playerZ).grow(BOUNDING_BOX_OFFSET);
+		box = box.move(-playerX, -playerY, -playerZ).inflate(BOUNDING_BOX_OFFSET);
 		renderBoundingBox(box, redBlue, 1, redBlue, 155);
 		for (EnumFacing face : EnumFacing.VALUES)
 		{
@@ -1404,21 +1404,21 @@ public class ClientEventHandler
 			boolean flag = face.getAxisDirection() == (face.getAxis() == Axis.Y ? AxisDirection.NEGATIVE : AxisDirection.POSITIVE);
 			if (flag || isFront)
 			{
-				buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION);
-				buffer.pos(minX, minY, minZ).endVertex();
-				buffer.pos(maxX, northSouth ? minY : maxY, minZ).endVertex();
-				buffer.pos(maxX, maxY, maxZ).endVertex();
-				buffer.pos(minX,  northSouth ? maxY : minY, maxZ).endVertex();
-				t.draw();
+				buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION);
+				buffer.vertex(minX, minY, minZ).endVertex();
+				buffer.vertex(maxX, northSouth ? minY : maxY, minZ).endVertex();
+				buffer.vertex(maxX, maxY, maxZ).endVertex();
+				buffer.vertex(minX,  northSouth ? maxY : minY, maxZ).endVertex();
+				t.end();
 			}
 			if (!flag || isFront)
 			{
-				buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION);
-				buffer.pos(minX,  northSouth ? maxY : minY, maxZ).endVertex();
-				buffer.pos(maxX, maxY, maxZ).endVertex();
-				buffer.pos(maxX, northSouth ? minY : maxY, minZ).endVertex();
-				buffer.pos(minX, minY, minZ).endVertex();
-				t.draw();
+				buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION);
+				buffer.vertex(minX,  northSouth ? maxY : minY, maxZ).endVertex();
+				buffer.vertex(maxX, maxY, maxZ).endVertex();
+				buffer.vertex(maxX, northSouth ? minY : maxY, minZ).endVertex();
+				buffer.vertex(minX, minY, minZ).endVertex();
+				t.end();
 			}
 		}
 		glEnd();
@@ -1439,7 +1439,7 @@ public class ClientEventHandler
 		GlStateManager.disableBlend();
 	}
 	
-	private void renderBoundingBox(AxisAlignedBB boxBounding, float red, float green, float blue, int outerAlpha)
+	private void renderBoundingBox(AABB boxBounding, float red, float green, float blue, int outerAlpha)
 	{
 		RenderGlobal.drawSelectionBoundingBox(boxBounding, red, green, blue, outerAlpha / 255.0F);
 		GlStateManager.depthFunc(GL11.GL_GREATER);
@@ -1449,7 +1449,7 @@ public class ClientEventHandler
 	
 	private void renderEnvelopedShapes(int shapeType, NBTTagCompound nbt, double playerX,
 			double playerY, double playerZ, boolean isDrawn, boolean drawnBox, double r, ConfigShapeRenderPair configPair,
-			AxisAlignedBB box, double x, double y, double z, double contraction, boolean isOpen)
+			AABB box, double x, double y, double z, double contraction, boolean isOpen)
 	{
 		ConfigShapeRender configShape = configPair.envelopedShape;
 		if (configShape.renderInnerShape || configShape.renderOuterShape)
@@ -1746,7 +1746,7 @@ public class ClientEventHandler
 		GlStateManager.popMatrix();
 	}
 	
-	private AxisAlignedBB limitBox(AxisAlignedBB box, AxisAlignedBB mask)
+	private AABB limitBox(AABB box, AABB mask)
 	{
 		double d0 = Math.max(box.minX, mask.minX);
 		double d1 = Math.max(box.minY, mask.minY);
@@ -1754,7 +1754,7 @@ public class ClientEventHandler
 		double d3 = Math.min(box.maxX, mask.maxX);
 		double d4 = Math.min(box.maxY, mask.maxY);
 		double d5 = Math.min(box.maxZ, mask.maxZ);
-		return new AxisAlignedBB(d0, d1, d2, d3, d4, d5);
+		return new AABB(d0, d1, d2, d3, d4, d5);
 	}
 	
 	private double getInitialAngle(int mode)
@@ -1786,8 +1786,8 @@ public class ClientEventHandler
 		GL11.glTranslated(-playerX + 0.002 * dir.getFrontOffsetX(), -playerY + 0.002 * dir.getFrontOffsetY(), -playerZ + 0.002 * dir.getFrontOffsetZ());
 	}
 	
-	private AxisAlignedBB contractBoxOrRenderArrows(boolean contractBox, Tessellator t, BufferBuilder buffer, int side, boolean northSouth, EnumFacing dir,
-			AxisAlignedBB box, double invOffsetX, double invOffsetY, double invOffsetZ, boolean invertDirection, float minU, float maxU, float minV, float maxV)
+	private AABB contractBoxOrRenderArrows(boolean contractBox, Tesselator t, BufferBuilder buffer, int side, boolean northSouth, EnumFacing dir,
+			AABB box, double invOffsetX, double invOffsetY, double invOffsetZ, boolean invertDirection, float minU, float maxU, float minV, float maxV)
 	{
 		if (contractBox)
 		{
@@ -1796,7 +1796,7 @@ public class ClientEventHandler
 			if (invertDirection && Configs.translationScalePeriod > 1)
 				amount += 0.5;
 			
-			box = box.grow(-amount * invOffsetX, -amount * invOffsetY, -amount * invOffsetZ);
+			box = box.inflate(-amount * invOffsetX, -amount * invOffsetY, -amount * invOffsetZ);
 		}
 		else if (Configs.translationDistance > 0)
 		{
@@ -1828,8 +1828,8 @@ public class ClientEventHandler
 					}
 					amount -= distance / 2.0;
 				}
-				AxisAlignedBB box2 = new AxisAlignedBB(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ)
-					.offset(amount * dir.getFrontOffsetX(), amount * dir.getFrontOffsetY(), amount * dir.getFrontOffsetZ());
+				AABB box2 = new AABB(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ)
+					.move(amount * dir.getFrontOffsetX(), amount * dir.getFrontOffsetY(), amount * dir.getFrontOffsetZ());
 				renderTexturedSide(t, buffer, side, northSouth, box2, minU, maxU, minV, maxV, alpha);
 			}
 		}
@@ -1840,39 +1840,39 @@ public class ClientEventHandler
 		return box;
 	}
 	
-	private void renderTexturedSide(Tessellator t, BufferBuilder buffer, int side, boolean northSouth,
-			AxisAlignedBB box, float minU, float maxU, float minV, float maxV, double alpha)
+	private void renderTexturedSide(Tesselator t, BufferBuilder buffer, int side, boolean northSouth,
+			AABB box, float minU, float maxU, float minV, float maxV, double alpha)
 	{
 		GL11.glColor4d(1, 1, 1, alpha);
 		if (side == 1 || side == 3 || side == 4)
 		{
-			buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
-			buffer.pos(box.minX, box.minY, box.maxZ).tex(maxU, minV).endVertex();
-			buffer.pos(box.maxX, northSouth ? box.minY : box.maxY, box.maxZ).tex(minU, minV).endVertex();
-			buffer.pos(box.maxX, box.maxY, box.minZ).tex(minU, maxV).endVertex();
-			buffer.pos(box.minX, northSouth ? box.maxY : box.minY, box.minZ).tex(maxU, maxV).endVertex();
-			t.draw();
-			buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
-			buffer.pos(box.maxX, northSouth ? box.minY : box.maxY, box.maxZ).tex(minU, minV).endVertex();
-			buffer.pos(box.minX, box.minY, box.maxZ).tex(maxU, minV).endVertex();
-			buffer.pos(box.minX, northSouth ? box.maxY : box.minY, box.minZ).tex(maxU, maxV).endVertex();
-			buffer.pos(box.maxX, box.maxY, box.minZ).tex(minU, maxV).endVertex();
-			t.draw();
+			buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_TEX);
+			buffer.vertex(box.minX, box.minY, box.maxZ).uv(maxU, minV).endVertex();
+			buffer.vertex(box.maxX, northSouth ? box.minY : box.maxY, box.maxZ).uv(minU, minV).endVertex();
+			buffer.vertex(box.maxX, box.maxY, box.minZ).uv(minU, maxV).endVertex();
+			buffer.vertex(box.minX, northSouth ? box.maxY : box.minY, box.minZ).uv(maxU, maxV).endVertex();
+			t.end();
+			buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_TEX);
+			buffer.vertex(box.maxX, northSouth ? box.minY : box.maxY, box.maxZ).uv(minU, minV).endVertex();
+			buffer.vertex(box.minX, box.minY, box.maxZ).uv(maxU, minV).endVertex();
+			buffer.vertex(box.minX, northSouth ? box.maxY : box.minY, box.minZ).uv(maxU, maxV).endVertex();
+			buffer.vertex(box.maxX, box.maxY, box.minZ).uv(minU, maxV).endVertex();
+			t.end();
 		}
 		else
 		{
-			buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
-			buffer.pos(box.minX, northSouth ? box.maxY : box.minY, box.minZ).tex(maxU, minV).endVertex();
-			buffer.pos(box.maxX, box.maxY, box.minZ).tex(minU, minV).endVertex();
-			buffer.pos(box.maxX, northSouth ? box.minY : box.maxY, box.maxZ).tex(minU, maxV).endVertex();
-			buffer.pos(box.minX, box.minY, box.maxZ).tex(maxU, maxV).endVertex();
-			t.draw();
-			buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
-			buffer.pos(box.maxX, box.maxY, box.minZ).tex(minU, minV).endVertex();
-			buffer.pos(box.minX, northSouth ? box.maxY : box.minY, box.minZ).tex(maxU, minV).endVertex();
-			buffer.pos(box.minX, box.minY, box.maxZ).tex(maxU, maxV).endVertex();
-			buffer.pos(box.maxX, northSouth ? box.minY : box.maxY, box.maxZ).tex(minU, maxV).endVertex();
-			t.draw();
+			buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_TEX);
+			buffer.vertex(box.minX, northSouth ? box.maxY : box.minY, box.minZ).uv(maxU, minV).endVertex();
+			buffer.vertex(box.maxX, box.maxY, box.minZ).uv(minU, minV).endVertex();
+			buffer.vertex(box.maxX, northSouth ? box.minY : box.maxY, box.maxZ).uv(minU, maxV).endVertex();
+			buffer.vertex(box.minX, box.minY, box.maxZ).uv(maxU, maxV).endVertex();
+			t.end();
+			buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_TEX);
+			buffer.vertex(box.maxX, box.maxY, box.minZ).uv(minU, minV).endVertex();
+			buffer.vertex(box.minX, northSouth ? box.maxY : box.minY, box.minZ).uv(maxU, minV).endVertex();
+			buffer.vertex(box.minX, box.minY, box.maxZ).uv(maxU, maxV).endVertex();
+			buffer.vertex(box.maxX, northSouth ? box.minY : box.maxY, box.maxZ).uv(minU, maxV).endVertex();
+			t.end();
 		}
 	}
 	

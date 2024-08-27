@@ -18,16 +18,16 @@ import mod.chiselsandbits.api.APIExceptions.InvalidBitItem;
 import mod.chiselsandbits.api.IBitBrush;
 import mod.chiselsandbits.api.IChiselAndBitsAPI;
 import mod.chiselsandbits.api.IMultiStateBlock;
-import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.core.BlockPos;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.phys.AABB;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 
 import com.phylogeny.extrabitmanipulation.api.ChiselsAndBitsAPIAccess;
@@ -98,7 +98,7 @@ public class BitIOHelper
 		int[] mapArray = new int[stateToBitMap.size() * 2];
 		for (Entry<IBlockState, IBitBrush> entry : stateToBitMap.entrySet())
 		{
-			mapArray[counter++] = Block.getStateId(entry.getKey());
+			mapArray[counter++] = Block.getId(entry.getKey());
 			mapArray[counter++] = entry.getValue().getStateID();
 		}
 		return mapArray;
@@ -108,12 +108,12 @@ public class BitIOHelper
 	{
 		for (int i = 0; i < mapArray.length; i += 2)
 		{
-			IBlockState state = Block.getStateById(mapArray[i]);
+			IBlockState state = Block.stateById(mapArray[i]);
 			if (!isAir(state))
 			{
 				try
 				{
-					stateToBitMap.put(state, api.createBrushFromState(Block.getStateById(mapArray[i + 1])));
+					stateToBitMap.put(state, api.createBrushFromState(Block.stateById(mapArray[i + 1])));
 				}
 				catch (InvalidBitItem e) {}
 			}
@@ -144,7 +144,7 @@ public class BitIOHelper
 			for (Entry<IBlockState, IBitBrush> entry : stateToBitMap.entrySet())
 			{
 				saveStateToMapArrays(domainArray, pathArray, isBlockMap ? null : metaArray, counter++, isBlockMap, entry.getKey());
-				saveStateToMapArrays(domainArray, pathArray, metaArray, counter++, isBlockMap, Block.getStateById(entry.getValue().getStateID()));
+				saveStateToMapArrays(domainArray, pathArray, metaArray, counter++, isBlockMap, Block.stateById(entry.getValue().getStateID()));
 			}
 			nbt.removeTag(key + 0);
 			writeObjectToNBT(nbt, key + 1, domainArray);
@@ -213,7 +213,7 @@ public class BitIOHelper
 	{
 		Block block = ForgeRegistries.BLOCKS.getValue(new ResourceLocation(domainArray[index], pathArray[index]));
 		return block == null ? Blocks.AIR.getDefaultState() : (metaArray != null
-				? getStateFromMeta(block, metaArray[isBlockMap ? index / 2 : index]) : block.getDefaultState());
+				? getStateFromMeta(block, metaArray[isBlockMap ? index / 2 : index]) : block.defaultBlockState());
 	}
 	
 	private static byte[] compressObject(Object object) throws IOException
@@ -294,7 +294,7 @@ public class BitIOHelper
 			int n2 = n % 256;
 			int j = n2 / 16;
 			int k = n2 % 16;
-			IBlockState state = Block.getStateById(stateIDs[n]);
+			IBlockState state = Block.stateById(stateIDs[n]);
 			stateArray[i][j][k] = state;
 			if (!isAir(state))
 				stateMap.put(state, 1 + (stateMap.containsKey(state) ? stateMap.get(state) : 0));
@@ -313,9 +313,9 @@ public class BitIOHelper
 		}
 	}
 	
-	public static void saveBlockStates(IChiselAndBitsAPI api, EntityPlayer player, World world, AxisAlignedBB box, NBTTagCompound nbt)
+	public static void saveBlockStates(IChiselAndBitsAPI api, EntityPlayer player, Level world, AABB box, NBTTagCompound nbt)
 	{
-		if (world.isRemote)
+		if (world.isClientSide)
 			return;
 		
 		int[] stateIDs = new int[4096];
@@ -347,7 +347,7 @@ public class BitIOHelper
 					{
 						state = airState;
 					}
-					stateIDs[index++] = Block.getStateId(state);
+					stateIDs[index++] = Block.getId(state);
 				}
 			}
 		}
@@ -368,12 +368,12 @@ public class BitIOHelper
 	
 	public static void stateToBytes(ByteBuf buffer, IBlockState state)
 	{
-		buffer.writeInt(Block.getStateId(state));
+		buffer.writeInt(Block.getId(state));
 	}
 	
 	public static IBlockState stateFromBytes(ByteBuf buffer)
 	{
-		return Block.getStateById(buffer.readInt());
+		return Block.stateById(buffer.readInt());
 	}
 	
 	public static IBlockState getStateFromString(String stateString)
@@ -399,7 +399,7 @@ public class BitIOHelper
 			return null;
 		}
 		
-		return meta < 0 ? block.getDefaultState() : getStateFromMeta(block, meta);
+		return meta < 0 ? block.defaultBlockState() : getStateFromMeta(block, meta);
 	}
 	
 	@SuppressWarnings("deprecation")
@@ -419,7 +419,7 @@ public class BitIOHelper
 			return "minecraft:air";
 		
 		String valueString = regName.getResourceDomain() + ":" + regName.getResourcePath();
-		if (!state.equals(block.getDefaultState()))
+		if (!state.equals(block.defaultBlockState()))
 			valueString += ":" + block.getMetaFromState(state);
 		
 		return valueString;

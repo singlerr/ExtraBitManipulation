@@ -1,12 +1,11 @@
 package com.phylogeny.extrabitmanipulation.armor.model.vanilla;
 
 import net.minecraft.client.model.ModelRenderer;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityArmorStand;
 import net.minecraft.entity.monster.EntityZombie;
 import net.minecraft.entity.monster.EntityZombieVillager;
-import net.minecraft.util.math.MathHelper;
-
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 import com.phylogeny.extrabitmanipulation.reference.Configs;
 import com.phylogeny.extrabitmanipulation.reference.Utility;
 
@@ -246,8 +245,8 @@ public class ModelChiseledArmor extends ModelChiseledArmorBase
 		if (entity instanceof EntityZombie)
 		{
 			boolean flag = entity instanceof EntityZombie && ((EntityZombie) entity).isArmsRaised();
-			float f = MathHelper.sin(this.swingProgress * (float) Math.PI);
-			float f1 = MathHelper.sin((1.0F - (1.0F - this.swingProgress) * (1.0F - swingProgress)) * (float) Math.PI);
+			float f = Mth.sin(this.swingProgress * (float) Math.PI);
+			float f1 = Mth.sin((1.0F - (1.0F - this.swingProgress) * (1.0F - swingProgress)) * (float) Math.PI);
 			bipedRightArm.rotateAngleZ = 0.0F;
 			bipedLeftArm.rotateAngleZ = 0.0F;
 			bipedRightArm.rotateAngleY = -(0.1F - f * 0.6F);
@@ -257,10 +256,10 @@ public class ModelChiseledArmor extends ModelChiseledArmorBase
 			bipedLeftArm.rotateAngleX = f2;
 			bipedRightArm.rotateAngleX += f * 1.2F - f1 * 0.4F;
 			bipedLeftArm.rotateAngleX += f * 1.2F - f1 * 0.4F;
-			bipedRightArm.rotateAngleZ += MathHelper.cos(ageInTicks * 0.09F) * 0.05F + 0.05F;
-			bipedLeftArm.rotateAngleZ -= MathHelper.cos(ageInTicks * 0.09F) * 0.05F + 0.05F;
-			bipedRightArm.rotateAngleX += MathHelper.sin(ageInTicks * 0.067F) * 0.05F;
-			bipedLeftArm.rotateAngleX -= MathHelper.sin(ageInTicks * 0.067F) * 0.05F;
+			bipedRightArm.rotateAngleZ += Mth.cos(ageInTicks * 0.09F) * 0.05F + 0.05F;
+			bipedLeftArm.rotateAngleZ -= Mth.cos(ageInTicks * 0.09F) * 0.05F + 0.05F;
+			bipedRightArm.rotateAngleX += Mth.sin(ageInTicks * 0.067F) * 0.05F;
+			bipedLeftArm.rotateAngleX -= Mth.sin(ageInTicks * 0.067F) * 0.05F;
 		}
 	}
 	

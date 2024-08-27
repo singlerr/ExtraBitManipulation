@@ -3,14 +3,13 @@ package com.phylogeny.extrabitmanipulation.packet;
 import io.netty.buffer.ByteBuf;
 
 import javax.annotation.Nullable;
-
-import net.minecraft.entity.Entity;
+import net.minecraft.core.BlockPos;
 import net.minecraft.util.EnumParticleTypes;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.RayTraceResult;
+import net.minecraft.util.Mth;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.HitResult;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
@@ -41,7 +40,7 @@ public class PacketBitParticles implements IMessage
 		double z = entityBit.posZ;
 		Vec3d start = new Vec3d(x, y, z);
 		Vec3d end = new Vec3d(x + entityBit.motionX, y + entityBit.motionY, z + entityBit.motionZ);
-		RayTraceResult result = entity.getEntityBoundingBox().grow(0.30000001192092896D).calculateIntercept(start, end);
+		HitResult result = entity.getEntityBoundingBox().grow(0.30000001192092896D).calculateIntercept(start, end);
 		locBit = result != null ? result.hitVec : start;
 		locEntity = new Vec3d(entity.posX, entity.posY, entity.posZ);
 		width = (flag == 0 ? entityBit.width : entity.width) + 0.2;
@@ -89,7 +88,7 @@ public class PacketBitParticles implements IMessage
 				@Override
 				public void run()
 				{
-					World world = ClientHelper.getWorld();
+					Level world = ClientHelper.getWorld();
 					double width = message.width;
 					double height = message.height;
 					double x = message.locBit.x;
@@ -100,9 +99,9 @@ public class PacketBitParticles implements IMessage
 					{
 						for (int i = 0; i < 3; i++)
 						{
-							x2 = x - width * 0.5 + width * world.rand.nextDouble();
-							y2 = y - height * 0.5 + height * world.rand.nextDouble();
-							z2 = z - width * 0.5 + width * world.rand.nextDouble();
+							x2 = x - width * 0.5 + width * world.random.nextDouble();
+							y2 = y - height * 0.5 + height * world.random.nextDouble();
+							z2 = z - width * 0.5 + width * world.random.nextDouble();
 							world.spawnParticle(EnumParticleTypes.FLAME, x2, y2, z2, 0, 0, 0, new int[0]);
 						}
 					}
@@ -126,15 +125,15 @@ public class PacketBitParticles implements IMessage
 						if (message.flag != 2)
 							return;
 						
-						int count = MathHelper.clamp((int) (width * width * height * 6.25), 1, 50);
+						int count = Mth.clamp((int) (width * width * height * 6.25), 1, 50);
 						for (int i = 0; i < count; i++)
 						{
 							ClientHelper.spawnParticle(world, message.locBit, particleFactory);
 							if (message.flag == 2)
 							{
-								x2 = message.locEntity.x - width * 0.5 + width * world.rand.nextDouble();
-								y2 = message.locEntity.y + height * world.rand.nextDouble();
-								z2 = message.locEntity.z - width * 0.5 + width * world.rand.nextDouble();
+								x2 = message.locEntity.x - width * 0.5 + width * world.random.nextDouble();
+								y2 = message.locEntity.y + height * world.random.nextDouble();
+								z2 = message.locEntity.z - width * 0.5 + width * world.random.nextDouble();
 								world.spawnParticle(EnumParticleTypes.CLOUD, x2, y2, z2, 0, 0, 0, new int[0]);
 							}
 						}

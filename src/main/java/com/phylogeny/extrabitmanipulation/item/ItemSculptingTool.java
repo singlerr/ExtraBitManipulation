@@ -15,22 +15,22 @@ import mod.chiselsandbits.api.IBitLocation;
 import mod.chiselsandbits.api.IChiselAndBitsAPI;
 import mod.chiselsandbits.helpers.ModUtil;
 import mod.chiselsandbits.items.ItemChiseledBit;
-import net.minecraft.block.SoundType;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.util.ITooltipFlag;
+import net.minecraft.core.BlockPos;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
-import net.minecraft.util.SoundCategory;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.Mth;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.phys.AABB;
 import net.minecraftforge.event.ForgeEventFactory;
 
 import com.phylogeny.extrabitmanipulation.api.ChiselsAndBitsAPIAccess;
@@ -98,7 +98,7 @@ public class ItemSculptingTool extends ItemBitToolBase
 	@Override
 	public int getRGBDurabilityForDisplay(ItemStack stack)
 	{
-		return MathHelper.hsvToRGB((float) (Math.max(0.0F, getDurability(stack)) / 3.0F), 1.0F, 1.0F);
+		return Mth.hsvToRgb((float) (Math.max(0.0F, getDurability(stack)) / 3.0F), 1.0F, 1.0F);
 	}
 	
 	private double getDurability(ItemStack stack)
@@ -138,14 +138,14 @@ public class ItemSculptingTool extends ItemBitToolBase
 		return nbt;
 	}
 	
-	public boolean sculptBlocks(ItemStack stack, EntityPlayer player, World world, BlockPos pos,
+	public boolean sculptBlocks(ItemStack stack, EntityPlayer player, Level world, BlockPos pos,
 			EnumFacing side, Vec3d hit, Vec3d drawnStartPoint, SculptingData sculptingData)
 	{
 		ItemStack setBitStack = sculptingData.getBitStack();
 		if (setBitStack.isEmpty() && !removeBits)
 			return false;
 		
-		if (!world.isRemote)
+		if (!world.isClientSide)
 		{
 			initialize(stack);
 			player.inventoryContainer.detectAndSendChanges();
@@ -154,7 +154,7 @@ public class ItemSculptingTool extends ItemBitToolBase
 		IChiselAndBitsAPI api = ChiselsAndBitsAPIAccess.apiInstance;
 		boolean inside = wasInsideClicked(side, hit, pos);
 		if (!removeBits && !inside)
-			pos = pos.offset(side);
+			pos = pos.relative(side);
 		
 		boolean globalMode = sculptingData.getSculptMode() == 1;
 		if (drawnStartPoint != null || globalMode || isValidBlock(api, world, pos))
@@ -178,7 +178,7 @@ public class ItemSculptingTool extends ItemBitToolBase
 				float y2 = y + bitLoc.getBitY() * Utility.PIXEL_F;
 				float z2 = z + bitLoc.getBitZ() * Utility.PIXEL_F;
 				Shape shape;
-				AxisAlignedBB box;
+				AABB box;
 				if (shapeType != 4 && shapeType != 5)
 					direction %= 6;
 				
@@ -203,7 +203,7 @@ public class ItemSculptingTool extends ItemBitToolBase
 					float maxX = addPaddingToMax(x2, x3, padding);
 					float maxY = addPaddingToMax(y2, y3, padding);
 					float maxZ = addPaddingToMax(z2, z3, padding);
-					box = new AxisAlignedBB(Math.floor(minX), Math.floor(minY), Math.floor(minZ),
+					box = new AABB(Math.floor(minX), Math.floor(minY), Math.floor(minZ),
 							Math.ceil(maxX), Math.ceil(maxY), Math.ceil(maxZ));
 					float f = 0.5F;
 					minX *= f;
@@ -241,7 +241,7 @@ public class ItemSculptingTool extends ItemBitToolBase
 						y += offsetY * blockSemiDiameter;
 						z += offsetZ * blockSemiDiameter;
 					}
-					box = new AxisAlignedBB(x - blockSemiDiameter, y - blockSemiDiameter, z - blockSemiDiameter,
+					box = new AABB(x - blockSemiDiameter, y - blockSemiDiameter, z - blockSemiDiameter,
 							x + blockSemiDiameter, y + blockSemiDiameter, z + blockSemiDiameter);
 					float f = 0;
 					Vec3d vecOffset = new Vec3d(0, 0, 0);
@@ -266,7 +266,7 @@ public class ItemSculptingTool extends ItemBitToolBase
 				}
 				boolean creativeMode = player.capabilities.isCreativeMode;
 				Map<IBlockState, Integer> bitTypes = null;
-				if (removeBits && !world.isRemote && !creativeMode)
+				if (removeBits && !world.isClientSide && !creativeMode)
 					bitTypes = new HashMap<IBlockState, Integer>();
 				
 				int initialpossibleUses = Integer.MAX_VALUE;
@@ -302,12 +302,12 @@ public class ItemSculptingTool extends ItemBitToolBase
 				finally
 				{
 					api.endUndoGroup(player);
-					if (!world.isRemote && !Configs.dropBitsPerBlock)
+					if (!world.isClientSide && !Configs.dropBitsPerBlock)
 						BitInventoryHelper.giveOrDropStacks(player, world, pos, shape, api, bitTypes);
 					
 					int change = initialpossibleUses - possibleUses;
 					int newRemainingUses = remainingUses - (((ConfigProperty) Configs.itemPropertyMap.get(this)).takesDamage ? change : 0);
-					if (!world.isRemote && !creativeMode)
+					if (!world.isClientSide && !creativeMode)
 					{
 						nbt.setInteger(NBTKeys.REMAINING_USES, newRemainingUses);
 						if (!removeBits)
@@ -333,11 +333,11 @@ public class ItemSculptingTool extends ItemBitToolBase
 		return false;
 	}
 	
-	public static void playPlacementSound(EntityPlayer player, World world, BlockPos pos, float volumeReduction)
+	public static void playPlacementSound(EntityPlayer player, Level world, BlockPos pos, float volumeReduction)
 	{
 		@SuppressWarnings("deprecation")
 		SoundType sound = Blocks.STONE.getSoundType();
-		world.playSound(player, pos, sound.getPlaceSound(), SoundCategory.BLOCKS, (sound.getVolume()) / volumeReduction, sound.getPitch() * 0.8F);
+		world.playSound(player, pos, sound.getPlaceSound(), SoundSource.BLOCKS, (sound.getVolume()) / volumeReduction, sound.getPitch() * 0.8F);
 	}
 	
 	private float addPadding(float value, float padding)
@@ -373,7 +373,7 @@ public class ItemSculptingTool extends ItemBitToolBase
 	}
 	
 	@SuppressWarnings("null")
-	private int sculptBlock(IChiselAndBitsAPI api, EntityPlayer player, World world, BlockPos pos, Shape shape,
+	private int sculptBlock(IChiselAndBitsAPI api, EntityPlayer player, Level world, BlockPos pos, Shape shape,
 			Map<IBlockState, Integer> bitTypes, int remainingUses, IBitBrush setBit)
 	{
 		if (isValidBlock(api, world, pos))
@@ -426,7 +426,7 @@ public class ItemSculptingTool extends ItemBitToolBase
 					}
 				}
 			}
-			if (!world.isRemote && Configs.dropBitsPerBlock)
+			if (!world.isClientSide && Configs.dropBitsPerBlock)
 				BitInventoryHelper.giveOrDropStacks(player, world, pos, shape, api, bitTypes);
 			
 			if (remainingUses < initialRemainingUses)
@@ -435,13 +435,13 @@ public class ItemSculptingTool extends ItemBitToolBase
 		return remainingUses;
 	}
 	
-	private boolean isValidBlock(IChiselAndBitsAPI api, World world, BlockPos pos)
+	private boolean isValidBlock(IChiselAndBitsAPI api, Level world, BlockPos pos)
 	{
-		return api.canBeChiseled(world, pos) && (!removeBits || !world.isAirBlock(pos));
+		return api.canBeChiseled(world, pos) && (!removeBits || !world.isEmptyBlock(pos));
 	}
 	
 	@Override
-	public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flag)
+	public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<String> tooltip, TooltipFlag flag)
 	{
 		boolean shiftDown = GuiScreen.isShiftKeyDown();
 		boolean ctrlDown = GuiScreen.isCtrlKeyDown();

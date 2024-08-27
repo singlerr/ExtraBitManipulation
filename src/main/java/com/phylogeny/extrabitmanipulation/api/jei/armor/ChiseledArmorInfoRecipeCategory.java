@@ -3,8 +3,7 @@ package com.phylogeny.extrabitmanipulation.api.jei.armor;
 import java.util.List;
 
 import mezz.jei.api.IGuiHelper;
-import net.minecraft.item.ItemStack;
-
+import net.minecraft.world.item.ItemStack;
 import com.phylogeny.extrabitmanipulation.api.jei.InfoRecipeCategoryBase;
 import com.phylogeny.extrabitmanipulation.api.jei.icon.CategoryIconStackList;
 import com.phylogeny.extrabitmanipulation.reference.Reference;

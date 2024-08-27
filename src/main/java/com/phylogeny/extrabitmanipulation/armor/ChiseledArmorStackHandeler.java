@@ -24,11 +24,10 @@ import net.minecraft.client.renderer.block.model.ItemOverride;
 import net.minecraft.client.renderer.block.model.ItemOverrideList;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
-import net.minecraft.world.World;
-
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -60,7 +59,7 @@ public class ChiseledArmorStackHandeler extends ItemOverrideList
 	}
 	
 	@Override
-	public IBakedModel handleItemState(IBakedModel originalModel, ItemStack stack, @Nullable World world, @Nullable EntityLivingBase entity)
+	public IBakedModel handleItemState(IBakedModel originalModel, ItemStack stack, @Nullable Level world, @Nullable EntityLivingBase entity)
 	{
 		if (stack.hasTagCompound())
 		{

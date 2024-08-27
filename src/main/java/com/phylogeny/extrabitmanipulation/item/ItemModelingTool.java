@@ -13,22 +13,22 @@ import mod.chiselsandbits.api.APIExceptions.SpaceOccupied;
 import mod.chiselsandbits.api.IBitAccess;
 import mod.chiselsandbits.api.IBitBrush;
 import mod.chiselsandbits.api.IChiselAndBitsAPI;
-import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.util.ITooltipFlag;
+import net.minecraft.core.BlockPos;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
-import net.minecraft.world.World;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraftforge.fluids.Fluid;
 import net.minecraftforge.fluids.FluidRegistry;
 
@@ -68,11 +68,11 @@ public class ItemModelingTool extends ItemBitToolBase
 	}
 	
 	@Override
-	public EnumActionResult onItemUse(EntityPlayer player, World world,
+	public EnumActionResult onItemUse(EntityPlayer player, Level world,
 			BlockPos pos, EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ)
 	{
 		ItemStack stack = player.getHeldItem(hand);
-		if (world.isRemote && stack.hasTagCompound())
+		if (world.isClientSide && stack.hasTagCompound())
 		{
 			@SuppressWarnings("null")
 			ModelWriteData modelingData = new ModelWriteData(stack.getTagCompound().getBoolean(NBTKeys.BIT_MAPS_PER_TOOL));
@@ -82,15 +82,15 @@ public class ItemModelingTool extends ItemBitToolBase
 		return EnumActionResult.SUCCESS;
 	}
 	
-	public EnumActionResult createModel(ItemStack stack, EntityPlayer player, World world, BlockPos pos, EnumFacing facing, ModelWriteData modelingData)
+	public EnumActionResult createModel(ItemStack stack, EntityPlayer player, Level world, BlockPos pos, EnumFacing facing, ModelWriteData modelingData)
 	{
 		if (!stack.hasTagCompound())
 			return EnumActionResult.FAIL;
 		
-		if (!world.getBlockState(pos).getBlock().isReplaceable(world, pos))
+		if (!world.getBlockState(pos).getBlock().canBeReplaced(world, pos))
 		{
-			pos = pos.offset(facing);
-			if (!world.isAirBlock(pos))
+			pos = pos.relative(facing);
+			if (!world.isEmptyBlock(pos))
 				return EnumActionResult.FAIL;
 		}
 		world.setBlockToAir(pos);
@@ -109,7 +109,7 @@ public class ItemModelingTool extends ItemBitToolBase
 				modelingData.getStateToBitMap(api, stack), modelingData.getBlockToBitMap(api, stack), bitMap, player.capabilities.isCreativeMode);
 		if (!missingBitMap.isEmpty())
 		{
-			if (world.isRemote)
+			if (world.isClientSide)
 			{
 				int missingBitCount = 0;
 				for (IBlockState state : missingBitMap.keySet())
@@ -127,7 +127,7 @@ public class ItemModelingTool extends ItemBitToolBase
 		return createModel(player, world, pos, stack, api, stateArray, stateToBitCountArray, bitMap);
 	}
 	
-	private EnumActionResult createModel(EntityPlayer player, World world, BlockPos pos, ItemStack stack, IChiselAndBitsAPI api, IBlockState[][][] stateArray,
+	private EnumActionResult createModel(EntityPlayer player, Level world, BlockPos pos, ItemStack stack, IChiselAndBitsAPI api, IBlockState[][][] stateArray,
 			Map<IBlockState, ArrayList<BitCount>> stateToBitCountArray, Map<IBitBrush, Integer> bitMap)
 	{
 		IBitAccess bitAccess;
@@ -152,7 +152,7 @@ public class ItemModelingTool extends ItemBitToolBase
 		{
 			api.endUndoGroup(player);
 		}
-		if (!world.isRemote && !player.capabilities.isCreativeMode)
+		if (!world.isClientSide && !player.capabilities.isCreativeMode)
 		{
 			for (IBitBrush bit : bitMap.keySet())
 			{
@@ -164,7 +164,7 @@ public class ItemModelingTool extends ItemBitToolBase
 		return EnumActionResult.SUCCESS;
 	}
 	
-	public boolean createModel(EntityPlayer player, World world, ItemStack stack, IBlockState[][][] stateArray,
+	public boolean createModel(EntityPlayer player, Level world, ItemStack stack, IBlockState[][][] stateArray,
 			Map<IBlockState, ArrayList<BitCount>> stateToBitCountArray, IBitAccess bitAccess)
 	{
 		if (!ItemStackHelper.hasKey(stack, NBTKeys.SAVED_STATES))
@@ -196,7 +196,7 @@ public class ItemModelingTool extends ItemBitToolBase
 					}
 					catch (SpaceOccupied e)
 					{
-						if (world != null && world.isRemote)
+						if (world != null && world.isClientSide)
 							sendMessage(player, "Multipart(s) are in the way.");
 						
 						return false;
@@ -285,7 +285,7 @@ public class ItemModelingTool extends ItemBitToolBase
 				for (Integer stateID : inventoryBitCounts.keySet())
 				{
 					remainingBitCount = addBitCountObject(bitCountArray, bitMap, inventoryBitCounts,
-							api.createBrushFromState(Block.getStateById(stateID)), remainingBitCount, isCreative);
+							api.createBrushFromState(Block.stateById(stateID)), remainingBitCount, isCreative);
 					if (remainingBitCount == 0)
 						break;
 				}
@@ -336,7 +336,7 @@ public class ItemModelingTool extends ItemBitToolBase
 		String name = state.getBlock().getUnlocalizedName();
 		if (blockStack.getItem() != null)
 		{
-			name = blockStack.getDisplayName();
+			name = blockStack.getHoverName();
 		}
 		else if (state.getMaterial().isLiquid())
 		{
@@ -346,7 +346,7 @@ public class ItemModelingTool extends ItemBitToolBase
 		}
 		else
 		{
-			Item item = Item.getItemFromBlock(state.getBlock());
+			Item item = Item.byBlock(state.getBlock());
 			if (item != Items.AIR)
 				name = item.toString();
 		}
@@ -354,7 +354,7 @@ public class ItemModelingTool extends ItemBitToolBase
 	}
 	
 	@Override
-	public void addInformation(ItemStack stack, @Nullable World worldIn, List<String> tooltip, ITooltipFlag flag)
+	public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<String> tooltip, TooltipFlag flag)
 	{
 		boolean shiftDown = GuiScreen.isShiftKeyDown();
 		boolean ctrlDown = GuiScreen.isCtrlKeyDown();

@@ -1,9 +1,9 @@
 package com.phylogeny.extrabitmanipulation.proxy;
 
-import net.minecraft.client.renderer.color.IItemColor;
+import net.minecraft.client.color.item.ItemColor;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.registry.IRenderFactory;
 import net.minecraftforge.fml.client.registry.RenderingRegistry;
@@ -61,7 +61,7 @@ public class ProxyClient extends ProxyCommon
 		Configs.replacementBitsUnchiselable.initDefaultReplacementBit();
 		Configs.replacementBitsInsufficient.initDefaultReplacementBit();
 		Configs.initModelingBitMaps();
-		ClientHelper.getItemColors().registerItemColorHandler(new IItemColor()
+		ClientHelper.getItemColors().registerItemColorHandler(new ItemColor()
 		{
 			@Override
 			public int getColorFromItemstack(ItemStack stack, int tintIndex)

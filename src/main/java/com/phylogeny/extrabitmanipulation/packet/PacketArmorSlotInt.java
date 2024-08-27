@@ -8,7 +8,7 @@ import com.phylogeny.extrabitmanipulation.item.ItemChiseledArmor.ArmorType;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
 public abstract class PacketArmorSlotInt implements IMessage

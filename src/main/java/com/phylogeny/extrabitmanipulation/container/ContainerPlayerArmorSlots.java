@@ -8,8 +8,7 @@ import net.minecraft.inventory.InventoryBasic;
 import net.minecraft.inventory.InventoryCraftResult;
 import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.inventory.Slot;
-import net.minecraft.item.ItemStack;
-
+import net.minecraft.world.item.ItemStack;
 import com.phylogeny.extrabitmanipulation.armor.capability.ChiseledArmorSlotsHandler;
 import com.phylogeny.extrabitmanipulation.armor.capability.IChiseledArmorSlotsHandler;
 

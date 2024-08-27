@@ -2,8 +2,6 @@ package com.phylogeny.extrabitmanipulation.armor;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import net.minecraft.client.renderer.GLAllocation;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.nbt.NBTBase;
@@ -12,7 +10,7 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraftforge.common.util.Constants.NBT;
 
 import org.lwjgl.opengl.GL11;
-
+import com.mojang.blaze3d.platform.MemoryTracker;
 import com.phylogeny.extrabitmanipulation.helper.ItemStackHelper;
 import com.phylogeny.extrabitmanipulation.item.ItemChiseledArmor.ArmorType;
 import com.phylogeny.extrabitmanipulation.reference.NBTKeys;
@@ -107,7 +105,7 @@ public class DataChiseledArmorPiece
 	public int generateDisplayList(int partIndex, EntityLivingBase entity, float scale)
 	{
 		GlStateManager.pushMatrix();
-		int displayList = GLAllocation.generateDisplayLists(1);
+		int displayList = MemoryTracker.generateDisplayLists(1);
 		GlStateManager.glNewList(displayList, GL11.GL_COMPILE);
 		GlOperation.executeList(globalGlOperationsPre);
 		for (ArmorItem armorItem : partItemLists[partIndex])

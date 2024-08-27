@@ -1,13 +1,10 @@
 package com.phylogeny.extrabitmanipulation.shape;
 
 import javax.annotation.Nonnull;
-
-import net.minecraft.block.Block;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
-
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import com.phylogeny.extrabitmanipulation.reference.Configs;
 import com.phylogeny.extrabitmanipulation.reference.Utility;
 
@@ -67,36 +64,36 @@ public abstract class Shape
 	
 	public abstract boolean isPointInsideShape(BlockPos pos, int i, int j, int k);
 	
-	public Vec3d getRandomInternalPoint(World world, BlockPos pos)
+	public Vec3d getRandomInternalPoint(Level world, BlockPos pos)
 	{
 		int x = pos.getX();
 		int y = pos.getY();
 		int z = pos.getZ();
-		AxisAlignedBB bb = world.getBlockState(pos).getBoundingBox(world, pos);
-		AxisAlignedBB blockBounds = bb == null ? new AxisAlignedBB(pos) : 
-			new AxisAlignedBB(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ).offset(pos);
-		if (blockBounds.getAverageEdgeLength() == 0)
-			blockBounds = new AxisAlignedBB(x, y, z, x + 1, y + 1, z + 1);
+		AABB bb = world.getBlockState(pos).getBoundingBox(world, pos);
+		AABB blockBounds = bb == null ? new AABB(pos) : 
+			new AABB(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ).move(pos);
+		if (blockBounds.getSize() == 0)
+			blockBounds = new AABB(x, y, z, x + 1, y + 1, z + 1);
 		
-		AxisAlignedBB box = getIntersectingBox(blockBounds, getBoundingBox());
+		AABB box = getIntersectingBox(blockBounds, getBoundingBox());
 		float s = Configs.bitSpawnBoxContraction;
 		if (s > 0)
-			box = box.grow(-(box.maxX - box.minX) * s, -(box.maxY - box.minY) * s, -(box.maxZ - box.minZ) * s);
+			box = box.inflate(-(box.maxX - box.minX) * s, -(box.maxY - box.minY) * s, -(box.maxZ - box.minZ) * s);
 		
-		double d0 = world.rand.nextFloat() * (box.maxX - box.minX) + box.minX;
-		double d1 = world.rand.nextFloat() * (box.maxY - box.minY) + box.minY;
-		double d2 = world.rand.nextFloat() * (box.maxZ - box.minZ) + box.minZ;
+		double d0 = world.random.nextFloat() * (box.maxX - box.minX) + box.minX;
+		double d1 = world.random.nextFloat() * (box.maxY - box.minY) + box.minY;
+		double d2 = world.random.nextFloat() * (box.maxZ - box.minZ) + box.minZ;
 		return new Vec3d(d0, d1, d2);
 	}
 	
 	@Nonnull
-	protected AxisAlignedBB getBoundingBox()
+	protected AABB getBoundingBox()
 	{
 		return Block.FULL_BLOCK_AABB;
 	}
 	
 	@Nonnull
-	private AxisAlignedBB getIntersectingBox(AxisAlignedBB box1, AxisAlignedBB box2)
+	private AABB getIntersectingBox(AABB box1, AABB box2)
 	{
 		if (box1.minX > box2.maxX || box2.minX > box1.maxX || box1.minY > box2.maxY 
 				|| box2.minY > box1.maxY || box1.minZ > box2.maxZ || box2.minZ > box1.maxZ)
@@ -108,7 +105,7 @@ public abstract class Shape
 		double maxX = Math.min(box1.maxX, box2.maxX);
 		double maxY = Math.min(box1.maxY, box2.maxY);
 		double maxZ = Math.min(box1.maxZ, box2.maxZ);
-		return new AxisAlignedBB(minX, minY, minZ, maxX, maxY, maxZ);
+		return new AABB(minX, minY, minZ, maxX, maxY, maxZ);
 	}
 	
 	protected float reduceLength(float value)

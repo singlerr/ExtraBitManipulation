@@ -20,20 +20,20 @@ import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.command.CommandBase;
-import net.minecraft.command.CommandException;
 import net.minecraft.command.CommandReplaceItem;
 import net.minecraft.command.CommandResultStats;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.command.NumberInvalidException;
-import net.minecraft.entity.Entity;
+import net.minecraft.commands.CommandRuntimeException;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.EntityEquipmentSlot;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.JsonToNBT;
 import net.minecraft.nbt.NBTException;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.nbt.TagParser;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.CommandEvent;
@@ -180,7 +180,7 @@ public class ChiseledArmorSlotsEventHandler
 			String nbtTagJson = CommandBase.buildString(args, args.length > 5 ? 6 : 4);
 			try
 			{
-				stack.setTagCompound(JsonToNBT.getTagFromJson(nbtTagJson));
+				stack.setTagCompound(TagParser.parseTag(nbtTagJson));
 			}
 			catch (NBTException e)
 			{
@@ -195,7 +195,7 @@ public class ChiseledArmorSlotsEventHandler
 		}
 		if (!stack.isEmpty() && !ChiseledArmorSlotsHandler.isItemValid(slot, stack))
 		{
-			notifyCommandListener(event, "commands.replaceitem.failed", slotName, 1, stack.getTextComponent());
+			notifyCommandListener(event, "commands.replaceitem.failed", slotName, 1, stack.getDisplayName());
 			return;
 		}
 		Entity entity;
@@ -203,7 +203,7 @@ public class ChiseledArmorSlotsEventHandler
 		{
 			entity = CommandBase.getEntity(sender.getServer(), sender, args[1]);
 		}
-		catch (CommandException e)
+		catch (CommandRuntimeException e)
 		{
 			notifyCommandListener(event, e);
 			return;
@@ -225,7 +225,7 @@ public class ChiseledArmorSlotsEventHandler
 		cap.setStackInSlot(slot, stack);
 		player.openContainer.detectAndSendChanges();
 		sender.setCommandStat(CommandResultStats.Type.AFFECTED_ITEMS, 1);
-		notifyCommandListener(event, "commands.replaceitem.success", slotName, 1, stack.isEmpty() ? "Air" : stack.getTextComponent());
+		notifyCommandListener(event, "commands.replaceitem.success", slotName, 1, stack.isEmpty() ? "Air" : stack.getDisplayName());
 	}
 	
 	private void notifyCommandListener(CommandEvent event, String suffix)
@@ -233,7 +233,7 @@ public class ChiseledArmorSlotsEventHandler
 		notifyCommandListener(event, "command." + Reference.MOD_ID + ".vanity.failure." + suffix, new Object[0]);
 	}
 	
-	private void notifyCommandListener(CommandEvent event, CommandException e)
+	private void notifyCommandListener(CommandEvent event, CommandRuntimeException e)
 	{
 		notifyCommandListener(event, e.getMessage(), e.getErrorObjects());
 	}

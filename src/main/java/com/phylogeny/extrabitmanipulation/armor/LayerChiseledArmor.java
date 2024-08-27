@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
-
+import com.mojang.blaze3d.platform.MemoryTracker;
 import com.phylogeny.extrabitmanipulation.armor.capability.ChiseledArmorSlotsHandler;
 import com.phylogeny.extrabitmanipulation.armor.capability.IChiseledArmorSlotsHandler;
 import com.phylogeny.extrabitmanipulation.client.ClientHelper;
@@ -27,21 +27,20 @@ import net.minecraft.client.model.ModelPlayer;
 import net.minecraft.client.model.ModelRenderer;
 import net.minecraft.client.model.ModelVex;
 import net.minecraft.client.model.ModelVillager;
-import net.minecraft.client.renderer.GLAllocation;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.entity.RenderLivingBase;
-import net.minecraft.client.renderer.entity.layers.LayerRenderer;
+import net.minecraft.client.renderer.entity.layers.RenderLayer;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.monster.AbstractIllager;
 import net.minecraft.entity.monster.EntityZombieVillager;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumHandSide;
+import net.minecraft.world.item.ItemStack;
 
-public class LayerChiseledArmor implements LayerRenderer<EntityLivingBase>
+public class LayerChiseledArmor implements RenderLayer<EntityLivingBase>
 {
 	private final Map<NBTTagCompound, List<Integer>> movingPartsDisplayListsMap = new HashMap<NBTTagCompound, List<Integer>>();
 	private ModelRenderer head, body, villagerArms, rightLeg, leftLeg, rightArm, leftArm;
@@ -118,7 +117,7 @@ public class LayerChiseledArmor implements LayerRenderer<EntityLivingBase>
 		if (displayLists != null)
 		{
 			for (Integer displayList : displayLists)
-				GLAllocation.deleteDisplayLists(displayList);
+				MemoryTracker.deleteDisplayLists(displayList);
 		}
 	}
 	

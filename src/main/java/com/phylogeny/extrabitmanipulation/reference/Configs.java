@@ -18,7 +18,7 @@ import com.phylogeny.extrabitmanipulation.packet.PacketThrowBit.BitBagBitSelecti
 
 import mod.chiselsandbits.api.IBitBrush;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.item.Item;
+import net.minecraft.world.item.Item;
 
 public class Configs
 {

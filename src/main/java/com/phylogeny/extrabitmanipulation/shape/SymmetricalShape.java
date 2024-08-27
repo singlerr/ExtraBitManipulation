@@ -1,6 +1,6 @@
 package com.phylogeny.extrabitmanipulation.shape;
 
-import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.world.phys.AABB;
 
 public abstract class SymmetricalShape extends Shape
 {
@@ -15,9 +15,9 @@ public abstract class SymmetricalShape extends Shape
 	}
 	
 	@Override
-	protected AxisAlignedBB getBoundingBox()
+	protected AABB getBoundingBox()
 	{
-		return new AxisAlignedBB(centerX - semiDiameter, centerY - semiDiameter, centerZ - semiDiameter,
+		return new AABB(centerX - semiDiameter, centerY - semiDiameter, centerZ - semiDiameter,
 				centerX + semiDiameter, centerY + semiDiameter, centerZ + semiDiameter);
 	}
 	

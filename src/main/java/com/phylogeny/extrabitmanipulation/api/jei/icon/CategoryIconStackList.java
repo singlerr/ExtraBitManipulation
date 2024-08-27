@@ -5,9 +5,8 @@ import java.util.List;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.RenderHelper;
-import net.minecraft.item.ItemStack;
-
+import net.minecraft.world.item.ItemStack;
+import com.mojang.blaze3d.platform.Lighting;
 import com.phylogeny.extrabitmanipulation.api.jei.CycleTimer;
 
 public class CategoryIconStackList extends CategoryIconBase
@@ -30,9 +29,9 @@ public class CategoryIconStackList extends CategoryIconBase
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 		GlStateManager.enableDepth();
 		GlStateManager.enableRescaleNormal();
-		RenderHelper.enableGUIStandardItemLighting();
+		Lighting.enableGUIStandardItemLighting();
 		Minecraft.getMinecraft().getRenderItem().renderItemIntoGUI(cycleTimer.getCycledItem(stacks), xOffset + maskLeft, yOffset + maskTop);
-		RenderHelper.disableStandardItemLighting();
+		Lighting.turnOff();
 		GlStateManager.disableRescaleNormal();
 	}
 	

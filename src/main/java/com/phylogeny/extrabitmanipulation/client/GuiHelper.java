@@ -6,13 +6,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
-import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3d;
-
+import net.minecraft.world.phys.AABB;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.commons.lang3.tuple.MutableTriple;
@@ -20,7 +16,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
-
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.Tesselator;
 import com.phylogeny.extrabitmanipulation.client.gui.button.GuiButtonBase;
 
 public class GuiHelper
@@ -50,29 +48,29 @@ public class GuiHelper
 	
 	public static GuiScreen getOpenGui()
 	{
-		return getMinecraft().currentScreen;
+		return getMinecraft().screen;
 	}
 	
-	public static boolean isCursorInsideBox(AxisAlignedBB box, int mouseX, int mouseY)
+	public static boolean isCursorInsideBox(AABB box, int mouseX, int mouseY)
 	{
-		return box.grow(1).contains(new Vec3d(mouseX, mouseY, 0));
+		return box.inflate(1).contains(new Vec3d(mouseX, mouseY, 0));
 	}
 	
 	public static void drawRect(double left, double top, double right, double bottom, int color)
 	{
-		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder buffer = tessellator.getBuffer();
+		Tesselator tessellator = Tesselator.getInstance();
+		BufferBuilder buffer = tessellator.getBuilder();
 		GlStateManager.enableBlend();
 		GlStateManager.disableTexture2D();
 		GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA,
 				GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA, GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
 		GlStateManager.color((color >> 16 & 255) / 255.0F, (color >> 8 & 255) / 255.0F, (color & 255) / 255.0F, (color >> 24 & 255) / 255.0F);
-		buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION);
-		buffer.pos(left, bottom, 0.0D).endVertex();
-		buffer.pos(right, bottom, 0.0D).endVertex();
-		buffer.pos(right, top, 0.0D).endVertex();
-		buffer.pos(left, top, 0.0D).endVertex();
-		tessellator.draw();
+		buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION);
+		buffer.vertex(left, bottom, 0.0D).endVertex();
+		buffer.vertex(right, bottom, 0.0D).endVertex();
+		buffer.vertex(right, top, 0.0D).endVertex();
+		buffer.vertex(left, top, 0.0D).endVertex();
+		tessellator.end();
 		GlStateManager.enableTexture2D();
 		GlStateManager.disableBlend();
 	}
@@ -83,14 +81,14 @@ public class GuiHelper
 		GlStateManager.tryBlendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA,
 		GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ZERO);
 		GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-		Tessellator t = Tessellator.getInstance();
-		BufferBuilder buffer = t.getBuffer();
-		buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
-		buffer.pos(left, top, 0).tex(0, 0).endVertex();
-		buffer.pos(left, bottom, 0).tex(0, 1).endVertex();
-		buffer.pos(right, bottom, 0).tex(1, 1).endVertex();
-		buffer.pos(right, top, 0).tex(1, 0).endVertex();
-		t.draw();
+		Tesselator t = Tesselator.getInstance();
+		BufferBuilder buffer = t.getBuilder();
+		buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_TEX);
+		buffer.vertex(left, top, 0).uv(0, 0).endVertex();
+		buffer.vertex(left, bottom, 0).uv(0, 1).endVertex();
+		buffer.vertex(right, bottom, 0).uv(1, 1).endVertex();
+		buffer.vertex(right, top, 0).uv(1, 0).endVertex();
+		t.end();
 		GlStateManager.disableBlend();
 	}
 	
@@ -157,7 +155,7 @@ public class GuiHelper
 		return triple;
 	}
 
-	public static Pair<Vec3d, Float> scaleObjectWithMouseWheel(GuiScreen screen, AxisAlignedBB box,
+	public static Pair<Vec3d, Float> scaleObjectWithMouseWheel(GuiScreen screen, AABB box,
 			Vec3d translationVec, float scale, float scaleMax, float yOffset)
 	{
 		MutablePair<Vec3d, Float> pair = new MutablePair<Vec3d, Float>(translationVec, scale);

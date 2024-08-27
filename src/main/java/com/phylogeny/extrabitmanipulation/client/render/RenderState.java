@@ -1,36 +1,33 @@
 package com.phylogeny.extrabitmanipulation.client.render;
 
 import java.util.List;
-
-import net.minecraft.block.Block;
+import net.minecraft.CrashReport;
+import net.minecraft.CrashReportCategory;
+import net.minecraft.CrashReportDetail;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.BlockModelShapes;
-import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.EntityRenderer;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.Tessellator;
+import net.minecraft.client.renderer.block.BlockModelShaper;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.client.renderer.block.model.ItemCameraTransforms;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.texture.TextureMap;
-import net.minecraft.client.renderer.texture.TextureUtil;
 import net.minecraft.client.renderer.tileentity.TileEntityItemStackRenderer;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraft.crash.CrashReport;
-import net.minecraft.crash.CrashReportCategory;
-import net.minecraft.crash.ICrashReportDetail;
 import net.minecraft.init.Blocks;
-import net.minecraft.item.ItemStack;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.ReportedException;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 import net.minecraftforge.client.ForgeHooksClient;
 import net.minecraftforge.client.model.pipeline.LightUtil;
 
 import org.lwjgl.opengl.GL11;
-
+import com.mojang.blaze3d.platform.TextureUtil;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.Tesselator;
 import com.phylogeny.extrabitmanipulation.client.ClientHelper;
 import com.phylogeny.extrabitmanipulation.reference.Reference;
 
@@ -40,7 +37,7 @@ public class RenderState
 	
 	public static void renderStateIntoGUI(final IBlockState state, int x, int y)
 	{
-		BlockModelShapes blockModelShapes = ClientHelper.getBlockModelShapes();
+		BlockModelShaper blockModelShapes = ClientHelper.getBlockModelShapes();
 		IBakedModel model = blockModelShapes.getModelForState(state);
 		boolean emptyModel;
 		try
@@ -89,9 +86,9 @@ public class RenderState
 		}
 		catch (Throwable throwable)
 		{
-			CrashReport crashreport = CrashReport.makeCrashReport(throwable, "Rendering block state in " + Reference.MOD_ID + " bit mapping GUI");
-			CrashReportCategory crashreportcategory = crashreport.makeCategory("Block state being rendered");
-			crashreportcategory.addDetail("Block State", new ICrashReportDetail<String>()
+			CrashReport crashreport = CrashReport.forThrowable(throwable, "Rendering block state in " + Reference.MOD_ID + " bit mapping GUI");
+			CrashReportCategory crashreportcategory = crashreport.addCategory("Block state being rendered");
+			crashreportcategory.setDetail("Block State", new CrashReportDetail<String>()
 			{
 				@Override
 				public String call() throws Exception
@@ -102,7 +99,7 @@ public class RenderState
 			if (!stack.isEmpty())
 			{
 				final ItemStack stack2 = stack.copy();
-				crashreportcategory.addDetail("State's Item Type", new ICrashReportDetail<String>()
+				crashreportcategory.setDetail("State's Item Type", new CrashReportDetail<String>()
 				{
 					@Override
 					public String call() throws Exception
@@ -110,7 +107,7 @@ public class RenderState
 						return String.valueOf(stack2.getItem());
 					}
 				});
-				crashreportcategory.addDetail("State's Item Aux", new ICrashReportDetail<String>()
+				crashreportcategory.setDetail("State's Item Aux", new CrashReportDetail<String>()
 				{
 					@Override
 					public String call() throws Exception
@@ -118,7 +115,7 @@ public class RenderState
 						return String.valueOf(stack2.getMetadata());
 					}
 				});
-				crashreportcategory.addDetail("State's Item NBT", new ICrashReportDetail<String>()
+				crashreportcategory.setDetail("State's Item NBT", new CrashReportDetail<String>()
 				{
 					@Override
 					public String call() throws Exception
@@ -126,12 +123,12 @@ public class RenderState
 						return String.valueOf(stack2.getTagCompound());
 					}
 				});
-				crashreportcategory.addDetail("State's Item Foil", new ICrashReportDetail<String>()
+				crashreportcategory.setDetail("State's Item Foil", new CrashReportDetail<String>()
 				{
 					@Override
 					public String call() throws Exception
 					{
-						return String.valueOf(stack2.hasEffect());
+						return String.valueOf(stack2.hasFoil());
 					}
 				});
 			}
@@ -149,7 +146,7 @@ public class RenderState
 		return stack.getItem() == null || block == Blocks.STANDING_BANNER || block == Blocks.BARRIER;
 	}
 	
-	private static boolean isMissingModel(BlockModelShapes blockModelShapes, IBakedModel model)
+	private static boolean isMissingModel(BlockModelShaper blockModelShapes, IBakedModel model)
 	{
 		return model.equals(blockModelShapes.getModelManager().getMissingModel());
 	}
@@ -165,7 +162,7 @@ public class RenderState
 	{
 		TextureManager textureManager = Minecraft.getMinecraft().getTextureManager();
 		GlStateManager.pushMatrix();
-		textureManager.bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
+		textureManager.bind(TextureMap.LOCATION_BLOCKS_TEXTURE);
 		textureManager.getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, false);
 		GlStateManager.enableRescaleNormal();
 		GlStateManager.enableAlpha();
@@ -181,7 +178,7 @@ public class RenderState
 		GlStateManager.disableRescaleNormal();
 		GlStateManager.disableLighting();
 		GlStateManager.popMatrix();
-		textureManager.bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
+		textureManager.bind(TextureMap.LOCATION_BLOCKS_TEXTURE);
 		textureManager.getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
 	}
 	
@@ -297,7 +294,7 @@ public class RenderState
 			}
 			GlStateManager.translate(-0.5F, -0.5F, -0.5F);
 			renderModel(state, model, -1, alphaMultiplier, stack);
-			if (stack.hasEffect())
+			if (stack.hasFoil())
 				renderEffect(state, model);
 		}
 		GlStateManager.popMatrix();
@@ -321,8 +318,8 @@ public class RenderState
 	
 	private static void renderModel(IBlockState state, IBakedModel model, int color, float alphaMultiplier, ItemStack stack)
 	{
-		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder buffer = tessellator.getBuffer();
+		Tesselator tessellator = Tesselator.getInstance();
+		BufferBuilder buffer = tessellator.getBuilder();
 		buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.ITEM);
 		try
 		{
@@ -334,7 +331,7 @@ public class RenderState
 		catch (Exception e) {}
 		finally
 		{
-			tessellator.draw();
+			tessellator.end();
 		}
 	}
 	

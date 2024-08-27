@@ -1,11 +1,11 @@
 package com.phylogeny.extrabitmanipulation.packet;
 
 import io.netty.buffer.ByteBuf;
-import net.minecraft.item.ItemStack;
+import net.minecraft.core.BlockPos;
 import net.minecraft.util.EnumFacing;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.HitResult;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
@@ -23,7 +23,7 @@ public class PacketPlaceEntityBit implements IMessage
 	
 	public PacketPlaceEntityBit() {}
 	
-	public PacketPlaceEntityBit(ItemStack bitStack, BlockPos pos, RayTraceResult result)
+	public PacketPlaceEntityBit(ItemStack bitStack, BlockPos pos, HitResult result)
 	{
 		this.bitStack = bitStack;
 		this.pos = pos;
@@ -35,7 +35,7 @@ public class PacketPlaceEntityBit implements IMessage
 	public void toBytes(ByteBuf buffer)
 	{
 		ByteBufUtils.writeItemStack(buffer, bitStack);
-		buffer.writeLong(pos.toLong());
+		buffer.writeLong(pos.asLong());
 		buffer.writeDouble(hitVec.x);
 		buffer.writeDouble(hitVec.y);
 		buffer.writeDouble(hitVec.z);
@@ -46,7 +46,7 @@ public class PacketPlaceEntityBit implements IMessage
 	public void fromBytes(ByteBuf buffer)
 	{
 		bitStack = ByteBufUtils.readItemStack(buffer);
-		pos = BlockPos.fromLong(buffer.readLong());
+		pos = BlockPos.of(buffer.readLong());
 		hitVec = new Vec3d(buffer.readDouble(), buffer.readDouble(), buffer.readDouble());
 		sideHit = EnumFacing.getFront(buffer.readInt());
 	}

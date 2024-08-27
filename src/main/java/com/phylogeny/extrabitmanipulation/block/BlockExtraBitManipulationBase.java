@@ -1,9 +1,8 @@
 package com.phylogeny.extrabitmanipulation.block;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.material.Material;
-
 import com.phylogeny.extrabitmanipulation.client.CreativeTabExtraBitManipulation;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.material.Material;
 
 public class BlockExtraBitManipulationBase extends Block
 {

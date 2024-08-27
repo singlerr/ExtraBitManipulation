@@ -12,27 +12,27 @@ import mod.chiselsandbits.api.APIExceptions.SpaceOccupied;
 import mod.chiselsandbits.api.IBitAccess;
 import mod.chiselsandbits.api.IBitLocation;
 import mod.chiselsandbits.api.IChiselAndBitsAPI;
-import net.minecraft.block.SoundType;
-import net.minecraft.block.material.Material;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.entity.Entity;
+import net.minecraft.core.BlockPos;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.IProjectile;
 import net.minecraft.entity.monster.EntityBlaze;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.SoundEvents;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.DamageSource;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumParticleTypes;
-import net.minecraft.util.SoundEvent;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.RayTraceResult;
+import net.minecraft.util.Mth;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.material.Material;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.HitResult;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.fml.common.network.NetworkRegistry.TargetPoint;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -54,21 +54,21 @@ public class EntityBit extends Entity implements IProjectile, IEntityAdditionalS
 	protected boolean inGround;
 	public Entity shootingEntity;
 	
-	public EntityBit(World worldIn)
+	public EntityBit(Level worldIn)
 	{
 		super(worldIn);
 		setSize(Utility.PIXEL_F, Utility.PIXEL_F);
 	}
 	
-	public EntityBit(World worldIn, double x, double y, double z, ItemStack bitStack)
+	public EntityBit(Level worldIn, double x, double y, double z, ItemStack bitStack)
 	{
 		this(worldIn);
-		setPosition(x, y, z);
+		setPos(x, y, z);
 		this.bitStack = bitStack.copy();
 		this.bitStack.setCount(1);
 	}
 	
-	public EntityBit(World worldIn, EntityLivingBase shooter, ItemStack bitStack)
+	public EntityBit(Level worldIn, EntityLivingBase shooter, ItemStack bitStack)
 	{
 		this(worldIn, shooter.posX, shooter.posY + shooter.getEyeHeight() - 0.10000000149011612D, shooter.posZ, bitStack);
 		shootingEntity = shooter;
@@ -84,7 +84,7 @@ public class EntityBit extends Entity implements IProjectile, IEntityAdditionalS
 	
 	@Override
 	@SideOnly(Side.CLIENT)
-	public boolean isInRangeToRenderDist(double distance)
+	public boolean shouldRenderAtSqrDistance(double distance)
 	{
 		double range = getEntityBoundingBox().getAverageEdgeLength() * 10.0D;
 		if (Double.isNaN(range))
@@ -98,9 +98,9 @@ public class EntityBit extends Entity implements IProjectile, IEntityAdditionalS
 	{
 		pitch = (float) Math.toRadians(pitch);
 		yaw = (float) Math.toRadians(yaw);
-		float x = -MathHelper.sin(yaw) * MathHelper.cos(pitch);
-		float y = -MathHelper.sin(pitch);
-		float z = MathHelper.cos(yaw) * MathHelper.cos(pitch);
+		float x = -Mth.sin(yaw) * Mth.cos(pitch);
+		float y = -Mth.sin(pitch);
+		float z = Mth.cos(yaw) * Mth.cos(pitch);
 		setThrowableHeading(x, y, z, velocity, inaccuracy);
 		motionX += shooter.motionX;
 		motionZ += shooter.motionZ;
@@ -111,47 +111,47 @@ public class EntityBit extends Entity implements IProjectile, IEntityAdditionalS
 	@Override
 	public void setThrowableHeading(double x, double y, double z, float velocity, float inaccuracy)
 	{
-		float f = MathHelper.sqrt(x * x + y * y + z * z);
+		float f = Mth.sqrt(x * x + y * y + z * z);
 		x /= f;
 		y /= f;
 		z /= f;
-		x += rand.nextGaussian() * 0.007499999832361937D * inaccuracy;
-		y += rand.nextGaussian() * 0.007499999832361937D * inaccuracy;
-		z += rand.nextGaussian() * 0.007499999832361937D * inaccuracy;
+		x += random.nextGaussian() * 0.007499999832361937D * inaccuracy;
+		y += random.nextGaussian() * 0.007499999832361937D * inaccuracy;
+		z += random.nextGaussian() * 0.007499999832361937D * inaccuracy;
 		x *= velocity;
 		y *= velocity;
 		z *= velocity;
 		motionX = x;
 		motionY = y;
 		motionZ = z;
-		float f1 = MathHelper.sqrt(x * x + z * z);
-		rotationYaw = (float)(MathHelper.atan2(x, z) * (180D / Math.PI));
-		rotationPitch = (float)(MathHelper.atan2(y, f1) * (180D / Math.PI));
-		prevRotationYaw = rotationYaw;
-		prevRotationPitch = rotationPitch;
+		float f1 = Mth.sqrt(x * x + z * z);
+		yRot = (float)(Mth.atan2(x, z) * (180D / Math.PI));
+		xRot = (float)(Mth.atan2(y, f1) * (180D / Math.PI));
+		yRotO = yRot;
+		xRotO = xRot;
 	}
 	
 	@Override
 	@SideOnly(Side.CLIENT)
-	public void setVelocity(double x, double y, double z)
+	public void lerpMotion(double x, double y, double z)
 	{
 		motionX = x;
 		motionY = y;
 		motionZ = z;
-		if (prevRotationPitch == 0.0F && prevRotationYaw == 0.0F)
+		if (xRotO == 0.0F && yRotO == 0.0F)
 		{
 			setRotation(x, y, z);
-			setLocationAndAngles(posX, posY, posZ, rotationYaw, rotationPitch);
+			moveTo(posX, posY, posZ, yRot, xRot);
 		}
 	}
 	
 	private void setRotation(double x, double y, double z)
 	{
-		float f = MathHelper.sqrt(x * x + z * z);
-		rotationPitch = (float)(MathHelper.atan2(y, f) * (180D / Math.PI));
-		rotationYaw = (float)(MathHelper.atan2(x, z) * (180D / Math.PI));
-		prevRotationPitch = rotationPitch;
-		prevRotationYaw = rotationYaw;
+		float f = Mth.sqrt(x * x + z * z);
+		xRot = (float)(Mth.atan2(y, f) * (180D / Math.PI));
+		yRot = (float)(Mth.atan2(x, z) * (180D / Math.PI));
+		xRotO = xRot;
+		yRotO = yRot;
 	}
 	
 	@Override
@@ -161,12 +161,12 @@ public class EntityBit extends Entity implements IProjectile, IEntityAdditionalS
 			return;
 		
 		super.onUpdate();
-		if (prevRotationPitch == 0.0F && prevRotationYaw == 0.0F)
+		if (xRotO == 0.0F && yRotO == 0.0F)
 			setRotation(motionX, motionY, motionZ);
 		
 		Vec3d start = new Vec3d(posX, posY, posZ);
 		Vec3d end = new Vec3d(posX + motionX, posY + motionY, posZ + motionZ);
-		RayTraceResult result = world.rayTraceBlocks(start, end, false, true, false);
+		HitResult result = level.clipWithInteractionOverride(start, end, false, true, false);
 		start = new Vec3d(posX, posY, posZ);
 		end = new Vec3d(posX + motionX, posY + motionY, posZ + motionZ);
 		if (result != null)
@@ -174,7 +174,7 @@ public class EntityBit extends Entity implements IProjectile, IEntityAdditionalS
 		
 		Entity entity = findEntityOnPath(start, end);
 		if (entity != null)
-			result = new RayTraceResult(entity);
+			result = new HitResult(entity);
 		
 		if (result != null)
 			onHit(result);
@@ -182,46 +182,46 @@ public class EntityBit extends Entity implements IProjectile, IEntityAdditionalS
 		posX += motionX;
 		posY += motionY;
 		posZ += motionZ;
-		float f4 = MathHelper.sqrt(motionX * motionX + motionZ * motionZ);
-		rotationYaw = (float)(MathHelper.atan2(motionX, motionZ) * (180D / Math.PI));
-		for (rotationPitch = (float)(MathHelper.atan2(motionY, f4) * (180D / Math.PI));
-				rotationPitch - prevRotationPitch < -180.0F; prevRotationPitch -= 360.0F) {}
+		float f4 = Mth.sqrt(motionX * motionX + motionZ * motionZ);
+		yRot = (float)(Mth.atan2(motionX, motionZ) * (180D / Math.PI));
+		for (xRot = (float)(Mth.atan2(motionY, f4) * (180D / Math.PI));
+				xRot - xRotO < -180.0F; xRotO -= 360.0F) {}
 		
-		while (rotationPitch - prevRotationPitch >= 180.0F)
-			prevRotationPitch += 360.0F;
+		while (xRot - xRotO >= 180.0F)
+			xRotO += 360.0F;
 		
-		while (rotationYaw - prevRotationYaw < -180.0F)
-			prevRotationYaw -= 360.0F;
+		while (yRot - yRotO < -180.0F)
+			yRotO -= 360.0F;
 		
-		while (rotationYaw - prevRotationYaw >= 180.0F)
-			prevRotationYaw += 360.0F;
+		while (yRot - yRotO >= 180.0F)
+			yRotO += 360.0F;
 		
-		rotationPitch = prevRotationPitch + (rotationPitch - prevRotationPitch) * 0.2F;
-		rotationYaw = prevRotationYaw + (rotationYaw - prevRotationYaw) * 0.2F;
+		xRot = xRotO + (xRot - xRotO) * 0.2F;
+		yRot = yRotO + (yRot - yRotO) * 0.2F;
 		float attenuation = 0.99F;
 		if (isInWater())
 		{
 			for (int i = 0; i < 4; ++i)
 			{
-				world.spawnParticle(EnumParticleTypes.WATER_BUBBLE, posX - motionX * 0.25D,
+				level.spawnParticle(EnumParticleTypes.WATER_BUBBLE, posX - motionX * 0.25D,
 						posY - motionY * 0.25D, posZ - motionZ * 0.25D, motionX, motionY, motionZ, new int[0]);
 			}
 			attenuation = 0.6F;
 		}
-		if (isWet())
-			extinguish();
+		if (isInWaterOrRain())
+			clearFire();
 		
 		motionX *= attenuation;
 		motionY *= attenuation;
 		motionZ *= attenuation;
-		if (!hasNoGravity())
+		if (!isNoGravity())
 			motionY -= 0.05000000074505806D;
 		
-		setPosition(posX, posY, posZ);
-		doBlockCollisions();
+		setPos(posX, posY, posZ);
+		checkInsideBlocks();
 	}
 	
-	protected void onHit(RayTraceResult result)
+	protected void onHit(HitResult result)
 	{
 		if (bitStack.isEmpty())
 			return;
@@ -242,12 +242,12 @@ public class EntityBit extends Entity implements IProjectile, IEntityAdditionalS
 		Entity entity = result.entityHit;
 		if (entity != null)
 		{
-			if (!world.isRemote)
+			if (!level.isClientSide)
 			{
 				if ((isLava ? Configs.disableIgniteEntities : Configs.disableExtinguishEntities) || drop)
 				{
 					if (!Configs.thrownBitDamageDisable)
-						entity.attackEntityFrom(DamageSource.causeThrownDamage(this, shootingEntity), Configs.thrownBitDamage);
+						entity.hurt(DamageSource.thrown(this, shootingEntity), Configs.thrownBitDamage);
 					
 					drop = true;
 				}
@@ -255,30 +255,30 @@ public class EntityBit extends Entity implements IProjectile, IEntityAdditionalS
 				{
 					if (isLava)
 					{
-						playSound(SoundEvents.BLOCK_FIRE_AMBIENT, 1.0F, 3.6F + (rand.nextFloat() - rand.nextFloat()) * 0.4F);
+						playSound(SoundEvents.BLOCK_FIRE_AMBIENT, 1.0F, 3.6F + (random.nextFloat() - random.nextFloat()) * 0.4F);
 					}
 					else
 					{
-						playSound(getSwimSound(), 0.2F, 1.6F + (rand.nextFloat() - rand.nextFloat()) * 0.4F);
+						playSound(getSwimSound(), 0.2F, 1.6F + (random.nextFloat() - random.nextFloat()) * 0.4F);
 					}
 					int flag = isLava ? 0 : 1;
-					if (entity.isBurning() != isLava)
+					if (entity.isOnFire() != isLava)
 					{
 						if (isLava)
 						{
-							entity.setFire(Configs.thrownLavaBitBurnTime);
+							entity.setSecondsOnFire(Configs.thrownLavaBitBurnTime);
 						}
 						else
 						{
-							entity.extinguish();
-							playSound(SoundEvents.ENTITY_GENERIC_EXTINGUISH_FIRE, 0.7F, 1.0F + (rand.nextFloat() - rand.nextFloat()) * 0.4F);
+							entity.clearFire();
+							playSound(SoundEvents.ENTITY_GENERIC_EXTINGUISH_FIRE, 0.7F, 1.0F + (random.nextFloat() - random.nextFloat()) * 0.4F);
 							flag = 2;
 						}
 					}
 					if (!isLava && entity instanceof EntityBlaze)
 					{
 						if (!Configs.thrownWaterBitBlazeDamageDisable)
-							entity.attackEntityFrom(DamageSource.causeThrownDamage(this, shootingEntity), Configs.thrownWaterBitBlazeDamage);
+							entity.hurt(DamageSource.thrown(this, shootingEntity), Configs.thrownWaterBitBlazeDamage);
 						
 						flag = 2;
 					}
@@ -291,25 +291,25 @@ public class EntityBit extends Entity implements IProjectile, IEntityAdditionalS
 			BlockPos pos = result.getBlockPos();
 			if (!(isLava ? Configs.disableIgniteBlocks : Configs.disableExtinguishBlocks) && !drop)
 			{
-				if (!world.isRemote)
+				if (!level.isClientSide)
 				{
-					pos = pos.offset(result.sideHit);
+					pos = pos.relative(result.sideHit);
 					if (isLava)
 					{
-						if (world.isAirBlock(pos))
+						if (level.isEmptyBlock(pos))
 						{
-							playSound(SoundEvents.BLOCK_FIRE_AMBIENT, 1.0F, 3.6F + (rand.nextFloat() - rand.nextFloat()) * 0.4F);
-							world.setBlockState(pos, Blocks.FIRE.getDefaultState(), 11);
+							playSound(SoundEvents.BLOCK_FIRE_AMBIENT, 1.0F, 3.6F + (random.nextFloat() - random.nextFloat()) * 0.4F);
+							level.setBlock(pos, Blocks.FIRE.getDefaultState(), 11);
 						}
 					}
 					else
 					{
-						playSound(getSwimSound(), 0.2F, 1.6F + (rand.nextFloat() - rand.nextFloat()) * 0.4F);
+						playSound(getSwimSound(), 0.2F, 1.6F + (random.nextFloat() - random.nextFloat()) * 0.4F);
 						int flag = 3;
-						if (world.getBlockState(pos).getBlock() == Blocks.FIRE)
+						if (level.getBlockState(pos).getBlock() == Blocks.FIRE)
 						{
-							playSound(SoundEvents.BLOCK_FIRE_EXTINGUISH, 0.5F, 2.6F + (world.rand.nextFloat() - world.rand.nextFloat()) * 0.8F);
-							world.setBlockState(pos, Blocks.AIR.getDefaultState(), 2);
+							playSound(SoundEvents.BLOCK_FIRE_EXTINGUISH, 0.5F, 2.6F + (level.random.nextFloat() - level.random.nextFloat()) * 0.8F);
+							level.setBlock(pos, Blocks.AIR.getDefaultState(), 2);
 							flag = 4;
 						}
 						Vec3d hit = result.hitVec.addVector(Utility.PIXEL_D * result.sideHit.getFrontOffsetY() * 2,
@@ -317,36 +317,36 @@ public class EntityBit extends Entity implements IProjectile, IEntityAdditionalS
 								Utility.PIXEL_D * result.sideHit.getFrontOffsetZ() * 2);
 						updateClients(new PacketBitParticles(flag, hit, pos));
 					}
-					setDead();
+					removeAfterChangingDimensions();
 				}
 				return;
 			}
-			if (!world.isRemote)
+			if (!level.isClientSide)
 			{
-				float volume = MathHelper.sqrt(motionX * motionX + motionY * motionY + motionZ * motionZ) * 0.2F;
+				float volume = Mth.sqrt(motionX * motionX + motionY * motionY + motionZ * motionZ) * 0.2F;
 				if (volume > 1.0F)
 					volume = 1.0F;
 				
 				SoundEvent sound = SoundEvents.BLOCK_METAL_HIT;
-				IBlockState state = world.getBlockState(pos);
+				IBlockState state = level.getBlockState(pos);
 				if (state != null)
 				{
-					SoundType soundType = state.getBlock().getSoundType(state, world, pos, this);
+					SoundType soundType = state.getBlock().getSoundType(state, level, pos, this);
 					if (soundType != null)
 						sound = soundType.getFallSound();
 				}
-				playSound(sound, volume, 1.0F + (rand.nextFloat() - rand.nextFloat()) * 0.4F);
+				playSound(sound, volume, 1.0F + (random.nextFloat() - random.nextFloat()) * 0.4F);
 			}
-			drop = !placeBit(world, bitStack, pos, result.hitVec, result.sideHit, world.isRemote);
-			if (!world.isRemote && !drop)
+			drop = !placeBit(level, bitStack, pos, result.hitVec, result.sideHit, level.isClientSide);
+			if (!level.isClientSide && !drop)
 				updateClients(new PacketPlaceEntityBit(bitStack, pos, result));
 		}
-		if (!world.isRemote)
+		if (!level.isClientSide)
 		{
 			if (drop)
-				entityDropItem(bitStack, 0);
+				spawnAtLocation(bitStack, 0);
 			
-			setDead();
+			removeAfterChangingDimensions();
 		}
 	}
 	
@@ -355,7 +355,7 @@ public class EntityBit extends Entity implements IProjectile, IEntityAdditionalS
 		ExtraBitManipulation.packetNetwork.sendToAllAround(message, new TargetPoint(world.provider.getDimension(), posX, posY, posZ, 100));
 	}
 	
-	public static boolean placeBit(World world, ItemStack bitStack, BlockPos pos, Vec3d hitVec, EnumFacing sideHit, boolean simulate)
+	public static boolean placeBit(Level world, ItemStack bitStack, BlockPos pos, Vec3d hitVec, EnumFacing sideHit, boolean simulate)
 	{
 		try
 		{
@@ -392,16 +392,16 @@ public class EntityBit extends Entity implements IProjectile, IEntityAdditionalS
 	protected Entity findEntityOnPath(Vec3d start, Vec3d end)
 	{
 		Entity entity = null;
-		List<Entity> list = world.getEntitiesWithinAABBExcludingEntity(this, getEntityBoundingBox().expand(motionX, motionY, motionZ).grow(1.0D));
+		List<Entity> list = level.getEntities(this, getEntityBoundingBox().expand(motionX, motionY, motionZ).grow(1.0D));
 		double d0 = 0.0D;
 		for (int i = 0; i < list.size(); ++i)
 		{
 			Entity entity1 = list.get(i);
-			if (!entity1.canBeCollidedWith() || (entity1 == shootingEntity && ticksExisted < 5))
+			if (!entity1.isPickable() || (entity1 == shootingEntity && tickCount < 5))
 				continue;
 			
-			AxisAlignedBB axisalignedbb = entity1.getEntityBoundingBox().grow(0.30000001192092896D);
-			RayTraceResult raytraceresult = axisalignedbb.calculateIntercept(start, end);
+			AABB axisalignedbb = entity1.getEntityBoundingBox().grow(0.30000001192092896D);
+			HitResult raytraceresult = axisalignedbb.calculateIntercept(start, end);
 			if (raytraceresult != null)
 			{
 				double d1 = start.squareDistanceTo(raytraceresult.hitVec);
@@ -450,7 +450,7 @@ public class EntityBit extends Entity implements IProjectile, IEntityAdditionalS
 	}
 	
 	@Override
-	public boolean canBeAttackedWithItem()
+	public boolean isAttackable()
 	{
 		return false;
 	}
@@ -462,7 +462,7 @@ public class EntityBit extends Entity implements IProjectile, IEntityAdditionalS
 	}
 	
 	@Override
-	public boolean canPassengerSteer()
+	public boolean isControlledByLocalInstance()
 	{
 		return true;
 	}

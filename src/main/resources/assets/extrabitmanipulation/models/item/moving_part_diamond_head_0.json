@@ -1,6 +1,0 @@
-{
-    "parent": "extrabitmanipulation:item/moving_part_head_0",
-    "textures": {
-        "opaque": "minecraft:blocks/diamond_block"
-    }
-}

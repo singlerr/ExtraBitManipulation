@@ -1,6 +1,6 @@
 package com.phylogeny.extrabitmanipulation.shape;
 
-import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.world.phys.AABB;
 
 public abstract class AsymmetricalShape extends Shape
 {
@@ -41,9 +41,9 @@ public abstract class AsymmetricalShape extends Shape
 	}
 	
 	@Override
-	protected AxisAlignedBB getBoundingBox()
+	protected AABB getBoundingBox()
 	{
-		return new AxisAlignedBB(centerX - a, centerY - b, centerZ - c, centerX + a, centerY + b, centerZ + c);
+		return new AABB(centerX - a, centerY - b, centerZ - c, centerX + a, centerY + b, centerZ + c);
 	}
 	
 	protected boolean isPointInEllipse(float dv1, float dv2, float s1, float s2)

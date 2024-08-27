@@ -7,9 +7,8 @@ import java.util.List;
 import mezz.jei.api.IGuiHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
-
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import com.phylogeny.extrabitmanipulation.api.jei.InfoRecipeBase;
 import com.phylogeny.extrabitmanipulation.client.ClientHelper;
 import com.phylogeny.extrabitmanipulation.client.GuiHelper;
@@ -69,24 +68,24 @@ public class ShapeInfoRecipe extends InfoRecipeBase
 		GuiHelper.drawTexturedRect(imageBox.getMinX(), imageBox.getMinY(), imageBox.getMaxX(), imageBox.getMaxY());
 		yPos += slotDrawable.getHeight() + 4;
 		xPos = 69;
-		int nameWidth = minecraft.fontRenderer.getStringWidth(name);
+		int nameWidth = minecraft.font.width(name);
 		if (nameWidth < 103)
 			xPos += 52 - nameWidth * 0.5;
 		
-		yPos = slotDrawable.getHeight() / 2 - minecraft.fontRenderer.FONT_HEIGHT / 2;
-		minecraft.fontRenderer.drawString(name, xPos, yPos, Color.black.getRGB());
+		yPos = slotDrawable.getHeight() / 2 - minecraft.font.lineHeight / 2;
+		minecraft.font.draw(name, xPos, yPos, Color.black.getRGB());
 		boolean isSloped = imageIndex == 2 || imageIndex == 4;
 		xPos = imageIndex % 3 == 0 ? 51 : 33;
 		yPos = imageIndex == 3 ? 25 : (isSloped ? 30 : 28);
-		minecraft.fontRenderer.drawString(textSolid, xPos - minecraft.fontRenderer.getStringWidth(textSolid) / 2, yPos, Color.black.getRGB());
+		minecraft.font.draw(textSolid, xPos - minecraft.font.width(textSolid) / 2, yPos, Color.black.getRGB());
 		xPos = 109;
-		minecraft.fontRenderer.drawString(textHollow, xPos - minecraft.fontRenderer.getStringWidth(textHollow) / 2, yPos, Color.black.getRGB());
+		minecraft.font.draw(textHollow, xPos - minecraft.font.width(textHollow) / 2, yPos, Color.black.getRGB());
 		if (imageIndex % 3 != 0)
 		{
 			xPos = 79;
 			yPos = (isSloped ? 42 : 36);
-			minecraft.fontRenderer.drawString(textClosed, xPos - minecraft.fontRenderer.getStringWidth(textClosed) / 2, yPos, Color.black.getRGB());
-			minecraft.fontRenderer.drawString(textOpen, xPos + 55 - minecraft.fontRenderer.getStringWidth(textOpen) / 2, yPos, Color.black.getRGB());
+			minecraft.font.draw(textClosed, xPos - minecraft.font.width(textClosed) / 2, yPos, Color.black.getRGB());
+			minecraft.font.draw(textOpen, xPos + 55 - minecraft.font.width(textOpen) / 2, yPos, Color.black.getRGB());
 		}
 	}
 	

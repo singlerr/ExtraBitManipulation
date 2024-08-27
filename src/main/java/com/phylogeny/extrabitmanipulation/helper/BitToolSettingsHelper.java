@@ -47,13 +47,13 @@ import mod.chiselsandbits.api.IBitBrush;
 import mod.chiselsandbits.api.IChiselAndBitsAPI;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumFacing.Axis;
-import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.common.config.Property;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
@@ -87,9 +87,9 @@ public class BitToolSettingsHelper
 		return config.isPerTool() ? ItemStackHelper.getStack(nbt, nbtKey) : config.getValue();
 	}
 	
-	private static void setIntProperty(World world, Configuration configFile, ConfigBitToolSettingInt config, String catagory, int value)
+	private static void setIntProperty(Level world, Configuration configFile, ConfigBitToolSettingInt config, String catagory, int value)
 	{
-		if (!world.isRemote)
+		if (!world.isClientSide)
 			return;
 		
 		Property prop = configFile.get(catagory, config.getTitle(), config.getDefaultValue());
@@ -101,9 +101,9 @@ public class BitToolSettingsHelper
 		}
 	}
 	
-	private static void setBooleanProperty(World world, Configuration configFile, ConfigBitToolSettingBoolean config, String catagory, boolean value)
+	private static void setBooleanProperty(Level world, Configuration configFile, ConfigBitToolSettingBoolean config, String catagory, boolean value)
 	{
-		if (!world.isRemote)
+		if (!world.isClientSide)
 			return;
 		
 		Property prop = configFile.get(catagory, config.getTitle(), config.getDefaultValue());
@@ -115,9 +115,9 @@ public class BitToolSettingsHelper
 		}
 	}
 	
-	private static void setStackProperty(World world, Configuration configFile, ConfigBitStack config, String catagory, IBitBrush value)
+	private static void setStackProperty(Level world, Configuration configFile, ConfigBitStack config, String catagory, IBitBrush value)
 	{
-		if (!world.isRemote)
+		if (!world.isClientSide)
 			return;
 		
 		Property prop = configFile.get(catagory, config.getTitle(), config.getStringDeafult());
@@ -148,10 +148,10 @@ public class BitToolSettingsHelper
 	
 	public static void setModelAreaMode(EntityPlayer player, ItemStack stack, int mode, @Nullable ConfigBitToolSettingInt modelAreaMode)
 	{
-		World world = player.world;
+		Level world = player.world;
 		if (modelAreaMode == null || modelAreaMode.isPerTool())
 		{
-			if (world.isRemote)
+			if (world.isClientSide)
 			{
 				ExtraBitManipulation.packetNetwork.sendToServer(new PacketSetModelAreaMode(mode));
 			}
@@ -160,7 +160,7 @@ public class BitToolSettingsHelper
 				ItemStackHelper.setInt(player, stack, mode, NBTKeys.MODEL_AREA_MODE);
 			}
 		}
-		else if (world.isRemote)
+		else if (world.isClientSide)
 		{
 			setIntProperty(world, ConfigHandlerExtraBitManipulation.modelingMapConfigFile,
 					modelAreaMode, ConfigHandlerExtraBitManipulation.DATA_CATAGORY_MODEL, mode);
@@ -174,10 +174,10 @@ public class BitToolSettingsHelper
 	
 	public static void setModelSnapMode(EntityPlayer player, ItemStack stack, int mode, @Nullable ConfigBitToolSettingInt modelSnapMode)
 	{
-		World world = player.world;
+		Level world = player.world;
 		if (modelSnapMode == null || modelSnapMode.isPerTool())
 		{
-			if (world.isRemote)
+			if (world.isClientSide)
 			{
 				ExtraBitManipulation.packetNetwork.sendToServer(new PacketSetModelSnapMode(mode));
 			}
@@ -186,7 +186,7 @@ public class BitToolSettingsHelper
 				ItemStackHelper.setInt(player, stack, mode, NBTKeys.MODEL_SNAP_MODE);
 			}
 		}
-		else if (world.isRemote)
+		else if (world.isClientSide)
 		{
 			setIntProperty(world, ConfigHandlerExtraBitManipulation.modelingMapConfigFile,
 					modelSnapMode, ConfigHandlerExtraBitManipulation.DATA_CATAGORY_MODEL, mode);
@@ -200,10 +200,10 @@ public class BitToolSettingsHelper
 	
 	public static void setModelGuiOpen(EntityPlayer player, ItemStack stack, boolean isOpen, @Nullable ConfigBitToolSettingBoolean modelGuiOpen)
 	{
-		World world = player.world;
+		Level world = player.world;
 		if (modelGuiOpen == null || modelGuiOpen.isPerTool())
 		{
-			if (world.isRemote)
+			if (world.isClientSide)
 			{
 				ExtraBitManipulation.packetNetwork.sendToServer(new PacketSetModelGuiOpen(isOpen));
 			}
@@ -212,7 +212,7 @@ public class BitToolSettingsHelper
 				ItemStackHelper.setBoolean(player, stack, isOpen, NBTKeys.MODEL_GUI_OPEN);
 			}
 		}
-		else if (world.isRemote)
+		else if (world.isClientSide)
 		{
 			setBooleanProperty(world, ConfigHandlerExtraBitManipulation.modelingMapConfigFile,
 					modelGuiOpen, ConfigHandlerExtraBitManipulation.DATA_CATAGORY_MODEL, isOpen);
@@ -226,10 +226,10 @@ public class BitToolSettingsHelper
 	
 	public static void setSculptMode(EntityPlayer player, ItemStack stack, int mode, @Nullable ConfigBitToolSettingInt sculptMode)
 	{
-		World world = player.world;
+		Level world = player.world;
 		if (sculptMode == null || sculptMode.isPerTool())
 		{
-			if (world.isRemote)
+			if (world.isClientSide)
 			{
 				ExtraBitManipulation.packetNetwork.sendToServer(new PacketSetSculptMode(mode));
 			}
@@ -238,7 +238,7 @@ public class BitToolSettingsHelper
 				ItemStackHelper.setInt(player, stack, mode, NBTKeys.SCULPT_MODE);
 			}
 		}
-		else if (world.isRemote)
+		else if (world.isClientSide)
 		{
 			setIntProperty(world, ConfigHandlerExtraBitManipulation.sculptingConfigFile,
 					sculptMode, ConfigHandlerExtraBitManipulation.DATA_CATAGORY_SCULPT, mode);
@@ -252,10 +252,10 @@ public class BitToolSettingsHelper
 	
 	public static void setDirection(EntityPlayer player, ItemStack stack, int direction, @Nullable ConfigBitToolSettingInt sculptDirection)
 	{
-		World world = player.world;
+		Level world = player.world;
 		if (sculptDirection == null || sculptDirection.isPerTool())
 		{
-			if (world.isRemote)
+			if (world.isClientSide)
 			{
 				ExtraBitManipulation.packetNetwork.sendToServer(new PacketSetDirection(direction));
 			}
@@ -264,7 +264,7 @@ public class BitToolSettingsHelper
 				ItemStackHelper.setInt(player, stack, direction, NBTKeys.DIRECTION);
 			}
 		}
-		else if (world.isRemote)
+		else if (world.isClientSide)
 		{
 			setIntProperty(world, ConfigHandlerExtraBitManipulation.sculptingConfigFile,
 					sculptDirection, ConfigHandlerExtraBitManipulation.DATA_CATAGORY_SCULPT, direction);
@@ -280,10 +280,10 @@ public class BitToolSettingsHelper
 	
 	public static void setShapeType(EntityPlayer player, ItemStack stack, boolean isCurved, int shapeType, @Nullable ConfigBitToolSettingInt sculptShapeType)
 	{
-		World world = player.world;
+		Level world = player.world;
 		if (sculptShapeType == null || sculptShapeType.isPerTool())
 		{
-			if (world.isRemote)
+			if (world.isClientSide)
 			{
 				ExtraBitManipulation.packetNetwork.sendToServer(new PacketSetShapeType(isCurved, shapeType));
 			}
@@ -292,7 +292,7 @@ public class BitToolSettingsHelper
 				ItemStackHelper.setInt(player, stack, shapeType, NBTKeys.SHAPE_TYPE);
 			}
 		}
-		else if (world.isRemote)
+		else if (world.isClientSide)
 		{
 			setIntProperty(world, ConfigHandlerExtraBitManipulation.sculptingConfigFile,
 					sculptShapeType, ConfigHandlerExtraBitManipulation.DATA_CATAGORY_SCULPT, shapeType);
@@ -307,10 +307,10 @@ public class BitToolSettingsHelper
 	public static void setBitGridTargeted(EntityPlayer player, ItemStack stack,
 			boolean isTargeted, @Nullable ConfigBitToolSettingBoolean sculptTargetBitGridVertexes)
 	{
-		World world = player.world;
+		Level world = player.world;
 		if (sculptTargetBitGridVertexes == null || sculptTargetBitGridVertexes.isPerTool())
 		{
-			if (world.isRemote)
+			if (world.isClientSide)
 			{
 				ExtraBitManipulation.packetNetwork.sendToServer(new PacketSetTargetBitGridVertexes(isTargeted));
 			}
@@ -319,7 +319,7 @@ public class BitToolSettingsHelper
 				ItemStackHelper.setBoolean(player, stack, isTargeted, NBTKeys.TARGET_BIT_GRID_VERTEXES);
 			}
 		}
-		else if (world.isRemote)
+		else if (world.isClientSide)
 		{
 			setBooleanProperty(world, ConfigHandlerExtraBitManipulation.sculptingConfigFile,
 					sculptTargetBitGridVertexes, ConfigHandlerExtraBitManipulation.DATA_CATAGORY_SCULPT, isTargeted);
@@ -333,10 +333,10 @@ public class BitToolSettingsHelper
 	
 	public static void setSemiDiameter(EntityPlayer player, ItemStack stack, int semiDiameter, @Nullable ConfigBitToolSettingInt sculptSemiDiameter)
 	{
-		World world = player.world;
+		Level world = player.world;
 		if (sculptSemiDiameter == null || sculptSemiDiameter.isPerTool())
 		{
-			if (world.isRemote)
+			if (world.isClientSide)
 			{
 				ExtraBitManipulation.packetNetwork.sendToServer(new PacketSetSemiDiameter(semiDiameter));
 			}
@@ -345,7 +345,7 @@ public class BitToolSettingsHelper
 				ItemStackHelper.setInt(player, stack, semiDiameter, NBTKeys.SCULPT_SEMI_DIAMETER);
 			}
 		}
-		else if (world.isRemote)
+		else if (world.isClientSide)
 		{
 			setIntProperty(world, ConfigHandlerExtraBitManipulation.sculptingConfigFile,
 					sculptSemiDiameter, ConfigHandlerExtraBitManipulation.DATA_CATAGORY_SCULPT, semiDiameter);
@@ -360,10 +360,10 @@ public class BitToolSettingsHelper
 	public static void setHollowShape(EntityPlayer player, ItemStack stack, boolean isWire,
 			boolean hollowShape, @Nullable ConfigBitToolSettingBoolean sculptHollowShape)
 	{
-		World world = player.world;
+		Level world = player.world;
 		if (sculptHollowShape == null || sculptHollowShape.isPerTool())
 		{
-			if (world.isRemote)
+			if (world.isClientSide)
 			{
 				ExtraBitManipulation.packetNetwork.sendToServer(new PacketSetHollowShape(hollowShape, isWire));
 			}
@@ -372,7 +372,7 @@ public class BitToolSettingsHelper
 				ItemStackHelper.setBoolean(player, stack, hollowShape, NBTKeys.SCULPT_HOLLOW_SHAPE);
 			}
 		}
-		else if (world.isRemote)
+		else if (world.isClientSide)
 		{
 			setBooleanProperty(world, ConfigHandlerExtraBitManipulation.sculptingConfigFile,
 					sculptHollowShape, ConfigHandlerExtraBitManipulation.DATA_CATAGORY_SCULPT, hollowShape);
@@ -386,10 +386,10 @@ public class BitToolSettingsHelper
 	
 	public static void setEndsOpen(EntityPlayer player, ItemStack stack, boolean openEnds, @Nullable ConfigBitToolSettingBoolean sculptOpenEnds)
 	{
-		World world = player.world;
+		Level world = player.world;
 		if (sculptOpenEnds == null || sculptOpenEnds.isPerTool())
 		{
-			if (world.isRemote)
+			if (world.isClientSide)
 			{
 				ExtraBitManipulation.packetNetwork.sendToServer(new PacketSetEndsOpen(openEnds));
 			}
@@ -398,7 +398,7 @@ public class BitToolSettingsHelper
 				ItemStackHelper.setBoolean(player, stack, openEnds, NBTKeys.OPEN_ENDS);
 			}
 		}
-		else if (world.isRemote)
+		else if (world.isClientSide)
 		{
 			setBooleanProperty(world, ConfigHandlerExtraBitManipulation.sculptingConfigFile,
 					sculptOpenEnds, ConfigHandlerExtraBitManipulation.DATA_CATAGORY_SCULPT, openEnds);
@@ -412,10 +412,10 @@ public class BitToolSettingsHelper
 	
 	public static void setWallThickness(EntityPlayer player, ItemStack stack, int wallThickness, @Nullable ConfigBitToolSettingInt sculptWallThickness)
 	{
-		World world = player.world;
+		Level world = player.world;
 		if (sculptWallThickness == null || sculptWallThickness.isPerTool())
 		{
-			if (world.isRemote)
+			if (world.isClientSide)
 			{
 				ExtraBitManipulation.packetNetwork.sendToServer(new PacketSetWallThickness(wallThickness));
 			}
@@ -424,7 +424,7 @@ public class BitToolSettingsHelper
 				ItemStackHelper.setInt(player, stack, wallThickness, NBTKeys.WALL_THICKNESS);
 			}
 		}
-		else if (world.isRemote)
+		else if (world.isClientSide)
 		{
 			setIntProperty(world, ConfigHandlerExtraBitManipulation.sculptingConfigFile,
 					sculptWallThickness, ConfigHandlerExtraBitManipulation.DATA_CATAGORY_SCULPT, wallThickness);
@@ -438,10 +438,10 @@ public class BitToolSettingsHelper
 	
 	public static void setBitStack(EntityPlayer player, ItemStack stack, boolean isWire, IBitBrush bit, @Nullable ConfigBitStack sculptSetBit)
 	{
-		World world = player.world;
+		Level world = player.world;
 		if (sculptSetBit == null || sculptSetBit.isPerTool())
 		{
-			if (world.isRemote)
+			if (world.isClientSide)
 			{
 				ExtraBitManipulation.packetNetwork.sendToServer(new PacketSetBitStack(isWire, bit));
 			}
@@ -450,7 +450,7 @@ public class BitToolSettingsHelper
 				ItemStackHelper.setStack(player, stack, bit == null ? null : bit.getItemStack(1), NBTKeys.SET_BIT);
 			}
 		}
-		else if (world.isRemote)
+		else if (world.isClientSide)
 		{
 			setStackProperty(world, ConfigHandlerExtraBitManipulation.sculptingConfigFile,
 					sculptSetBit, ConfigHandlerExtraBitManipulation.DATA_CATAGORY_SCULPT, bit);
@@ -464,10 +464,10 @@ public class BitToolSettingsHelper
 	
 	public static void setShapeOffset(EntityPlayer player, ItemStack stack, boolean offsetShape, @Nullable ConfigBitToolSettingBoolean sculptOffsetShape)
 	{
-		World world = player.world;
+		Level world = player.world;
 		if (sculptOffsetShape == null || sculptOffsetShape.isPerTool())
 		{
-			if (world.isRemote)
+			if (world.isClientSide)
 			{
 				ExtraBitManipulation.packetNetwork.sendToServer(new PacketSetShapeOffset(offsetShape));
 			}
@@ -476,7 +476,7 @@ public class BitToolSettingsHelper
 				ItemStackHelper.setBoolean(player, stack, offsetShape, NBTKeys.OFFSET_SHAPE);
 			}
 		}
-		else if (world.isRemote)
+		else if (world.isClientSide)
 		{
 			setBooleanProperty(world, ConfigHandlerExtraBitManipulation.sculptingConfigFile,
 					sculptOffsetShape, ConfigHandlerExtraBitManipulation.DATA_CATAGORY_SCULPT, offsetShape);
@@ -490,10 +490,10 @@ public class BitToolSettingsHelper
 	
 	public static void setArmorMode(EntityPlayer player, ItemStack stack, int mode, @Nullable ConfigBitToolSettingInt armorMode)
 	{
-		World world = player.world;
+		Level world = player.world;
 		if (armorMode == null || armorMode.isPerTool())
 		{
-			if (world.isRemote)
+			if (world.isClientSide)
 			{
 				ExtraBitManipulation.packetNetwork.sendToServer(new PacketSetArmorMode(mode));
 			}
@@ -502,7 +502,7 @@ public class BitToolSettingsHelper
 				ItemStackHelper.setInt(player, stack, mode, NBTKeys.ARMOR_MODE);
 			}
 		}
-		else if (world.isRemote)
+		else if (world.isClientSide)
 		{
 			setIntProperty(world, ConfigHandlerExtraBitManipulation.chiseledArmorConfigFile,
 					armorMode, ConfigHandlerExtraBitManipulation.DATA_CATAGORY_ARMOR, mode);
@@ -522,16 +522,16 @@ public class BitToolSettingsHelper
 	public static void setArmorScale(EntityPlayer player, ItemStack stack, int scale,
 			@Nullable ConfigBitToolSettingInt armorScale, @Nullable ArmorType armorType, int indexArmorSet)
 	{
-		World world = player.world;
+		Level world = player.world;
 		if (armorScale == null || armorScale.isPerTool())
 		{
-			if (world.isRemote)
+			if (world.isClientSide)
 			{
 				ExtraBitManipulation.packetNetwork.sendToServer(new PacketSetArmorScale(scale, armorType, indexArmorSet));
 			}
 			ItemStackHelper.setInt(player, stack, scale, NBTKeys.ARMOR_SCALE);
 		}
-		else if (world.isRemote)
+		else if (world.isClientSide)
 		{
 			setIntProperty(world, ConfigHandlerExtraBitManipulation.chiseledArmorConfigFile,
 					armorScale, ConfigHandlerExtraBitManipulation.DATA_CATAGORY_ARMOR, scale);
@@ -558,16 +558,16 @@ public class BitToolSettingsHelper
 	public static void setArmorMovingPart(EntityPlayer player, ItemStack stack, int partIndex,
 			@Nullable ConfigBitToolSettingInt armorMovingPart, @Nullable ArmorType armorType, int indexArmorSet)
 	{
-		World world = player.world;
+		Level world = player.world;
 		if (armorMovingPart == null || armorMovingPart.isPerTool())
 		{
-			if (world.isRemote)
+			if (world.isClientSide)
 			{
 				ExtraBitManipulation.packetNetwork.sendToServer(new PacketSetArmorMovingPart(partIndex, armorType, indexArmorSet));
 			}
 			ItemStackHelper.setInt(player, stack, partIndex, NBTKeys.ARMOR_MOVING_PART);
 		}
-		else if (world.isRemote)
+		else if (world.isClientSide)
 		{
 			setIntProperty(world, ConfigHandlerExtraBitManipulation.chiseledArmorConfigFile,
 					armorMovingPart, ConfigHandlerExtraBitManipulation.DATA_CATAGORY_ARMOR, partIndex);
@@ -581,10 +581,10 @@ public class BitToolSettingsHelper
 	
 	public static void setArmorBitsTargeted(EntityPlayer player, ItemStack stack, boolean isTargeted, @Nullable ConfigBitToolSettingBoolean armorTargetBits)
 	{
-		World world = player.world;
+		Level world = player.world;
 		if (armorTargetBits == null || armorTargetBits.isPerTool())
 		{
-			if (world.isRemote)
+			if (world.isClientSide)
 			{
 				ExtraBitManipulation.packetNetwork.sendToServer(new PacketSetTargetArmorBits(isTargeted));
 			}
@@ -593,7 +593,7 @@ public class BitToolSettingsHelper
 				ItemStackHelper.setBoolean(player, stack, isTargeted, NBTKeys.ARMOR_TARGET_BITS);
 			}
 		}
-		else if (world.isRemote)
+		else if (world.isClientSide)
 		{
 			setBooleanProperty(world, ConfigHandlerExtraBitManipulation.chiseledArmorConfigFile,
 					armorTargetBits, ConfigHandlerExtraBitManipulation.DATA_CATAGORY_ARMOR, isTargeted);
@@ -915,7 +915,7 @@ public class BitToolSettingsHelper
 	
 	public static String getBitName(ItemStack bitStack)
 	{
-		return bitStack.getDisplayName().replace("Chiseled Bit - ", "");
+		return bitStack.getHoverName().replace("Chiseled Bit - ", "");
 	}
 	
 	public static class ArmorData
@@ -999,13 +999,13 @@ public class BitToolSettingsHelper
 	
 	public static class ArmorCollectionData extends ArmorData
 	{
-		private AxisAlignedBB boxCollection;
+		private AABB boxCollection;
 		private EnumFacing facing;
 		private Vec3d originBodyPart;
 		
 		public ArmorCollectionData() {}
 		
-		public ArmorCollectionData(NBTTagCompound nbt, ItemChiseledArmor armor, AxisAlignedBB boxCollection)
+		public ArmorCollectionData(NBTTagCompound nbt, ItemChiseledArmor armor, AABB boxCollection)
 		{
 			super(nbt, armor);
 			ArmorBodyPartTemplateBoxData boxData = new ArmorBodyPartTemplateBoxData(nbt, armor);
@@ -1062,7 +1062,7 @@ public class BitToolSettingsHelper
 		public void fromBytes(ByteBuf buffer)
 		{
 			super.fromBytes(buffer);
-			boxCollection = new AxisAlignedBB(buffer.readDouble(), buffer.readDouble(), buffer.readDouble(),
+			boxCollection = new AABB(buffer.readDouble(), buffer.readDouble(), buffer.readDouble(),
 					buffer.readDouble(), buffer.readDouble(), buffer.readDouble());
 			facing = EnumFacing.values()[buffer.readInt()];
 			originBodyPart = new Vec3d(buffer.readDouble(), buffer.readDouble(), buffer.readDouble());
@@ -1073,7 +1073,7 @@ public class BitToolSettingsHelper
 			return facing;
 		}
 		
-		public AxisAlignedBB getCollectionBox()
+		public AABB getCollectionBox()
 		{
 			return boxCollection;
 		}
@@ -1088,7 +1088,7 @@ public class BitToolSettingsHelper
 	public static class ArmorBodyPartTemplateBoxData
 	{
 		private EnumFacing facingBox;
-		AxisAlignedBB boxTemplate;
+		AABB boxTemplate;
 		
 		public ArmorBodyPartTemplateBoxData(NBTTagCompound nbt, ItemChiseledArmor armorPiece)
 		{
@@ -1104,7 +1104,7 @@ public class BitToolSettingsHelper
 			return facingBox;
 		}
 		
-		public AxisAlignedBB getBox()
+		public AABB getBox()
 		{
 			return boxTemplate;
 		}

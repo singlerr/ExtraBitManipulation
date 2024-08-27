@@ -2,11 +2,10 @@ package com.phylogeny.extrabitmanipulation.client.gui.button;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.block.model.IBakedModel;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
-
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import com.mojang.blaze3d.platform.Lighting;
 import com.phylogeny.extrabitmanipulation.client.ClientHelper;
 import com.phylogeny.extrabitmanipulation.client.render.RenderState;
 
@@ -86,7 +85,7 @@ public class GuiButtonTab extends GuiButtonBase
 			drawScaledCustomSizeModalRect(this.x + 4 + getOffsetX(), y + 4, this.u, v, uWidth, vHeight, 19, 18, textureSize, textureSize);
 		}
 		if (!displayString.isEmpty())
-			mc.fontRenderer.drawString(displayString, x + width / 2 - 1 - mc.fontRenderer.getStringWidth(displayString) / 2,
+			mc.font.draw(displayString, x + width / 2 - 1 - mc.font.width(displayString) / 2,
 					y + (height - 8) / 2 + 1, enabled ? 4210752 : 13027014, false);
 	}
 
@@ -110,7 +109,7 @@ public class GuiButtonTab extends GuiButtonBase
 		if (iconStack.isEmpty() && iconModels == null)
 			return;
 		
-		RenderHelper.enableGUIStandardItemLighting();
+		Lighting.enableGUIStandardItemLighting();
 		GlStateManager.pushMatrix();
 		GlStateManager.translate(0.5, 0, 0);
 		int x = this.x + 5 + getOffsetX();
@@ -138,7 +137,7 @@ public class GuiButtonTab extends GuiButtonBase
 				RenderState.renderStateModelIntoGUI(null, model, iconStack, alphaMultiplier, true, false, x - 6, y - 2, 0, 0, 1);
 		}
 		GlStateManager.popMatrix();
-		RenderHelper.disableStandardItemLighting();
+		Lighting.turnOff();
 	}
 	
 }

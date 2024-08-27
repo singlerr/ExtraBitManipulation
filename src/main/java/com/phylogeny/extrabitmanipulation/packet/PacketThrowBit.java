@@ -7,13 +7,13 @@ import mod.chiselsandbits.api.IBitBag;
 import mod.chiselsandbits.api.ItemType;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.SoundEvents;
-import net.minecraft.item.ItemStack;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.IThreadListener;
-import net.minecraft.util.SoundCategory;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.WorldServer;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
@@ -96,7 +96,7 @@ public class PacketThrowBit extends PacketEmpty
 							isBit ? Configs.thrownBitInaccuracy : Configs.thrownBitInaccuracyBitBag);
 					player.world.spawnEntity(entityBit);
 					player.world.playSound(null, player.posX, player.posY, player.posZ,
-							SoundEvents.ENTITY_SNOWBALL_THROW, SoundCategory.NEUTRAL, 0.5F, 0.4F / (player.world.rand.nextFloat() * 0.4F + 0.8F));
+							SoundEvents.ENTITY_SNOWBALL_THROW, SoundSource.NEUTRAL, 0.5F, 0.4F / (player.world.rand.nextFloat() * 0.4F + 0.8F));
 					if (isBit && !player.capabilities.isCreativeMode)
 					{
 						stack.shrink(1);

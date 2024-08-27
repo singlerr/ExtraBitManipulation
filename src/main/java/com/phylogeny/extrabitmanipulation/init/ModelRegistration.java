@@ -14,17 +14,16 @@ import com.phylogeny.extrabitmanipulation.reference.Configs;
 import com.phylogeny.extrabitmanipulation.reference.CustomNPCsReferences;
 import com.phylogeny.extrabitmanipulation.reference.MorePlayerModelsReference;
 import com.phylogeny.extrabitmanipulation.reference.Reference;
-
-import net.minecraft.block.Block;
 import net.minecraft.client.model.ModelBiped;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.EntityEquipmentSlot;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemArmor.ArmorMaterial;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 import net.minecraftforge.client.event.ModelBakeEvent;
 import net.minecraftforge.client.model.ModelLoader;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -103,7 +102,7 @@ public class ModelRegistration
 	
 	private static void registerItemBlockModel(Block block)
 	{
-		Item item = Item.getItemFromBlock(block);
+		Item item = Item.byBlock(block);
 		if (item != null)
 			registerItemModel(item, ((BlockExtraBitManipulationBase) block).getName());
 	}

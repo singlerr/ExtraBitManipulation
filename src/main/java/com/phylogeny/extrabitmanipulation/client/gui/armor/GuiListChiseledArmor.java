@@ -6,15 +6,14 @@ import javax.annotation.Nullable;
 
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiListExtended;
-import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-import net.minecraft.util.math.MathHelper;
-
+import net.minecraft.util.Mth;
 import org.lwjgl.opengl.GL11;
 
 import com.google.common.collect.Lists;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.Tesselator;
 import com.phylogeny.extrabitmanipulation.armor.DataChiseledArmorPiece;
 import com.phylogeny.extrabitmanipulation.client.GuiHelper;
 
@@ -113,8 +112,8 @@ public class GuiListChiseledArmor<E> extends GuiListExtended
 		bindAmountScrolled();
 		GlStateManager.disableLighting();
 		GlStateManager.disableFog();
-		Tessellator tessellator = Tessellator.getInstance();
-		BufferBuilder buffer = tessellator.getBuffer();
+		Tesselator tessellator = Tesselator.getInstance();
+		BufferBuilder buffer = tessellator.getBuilder();
 		int k = left;
 		int l = top + 2 - (int) amountScrolled;
 		
@@ -139,23 +138,23 @@ public class GuiListChiseledArmor<E> extends GuiListExtended
 		if (j1 > 0)
 		{
 			int k1 = (bottom - top) * (bottom - top) / getContentHeight();
-			k1 = MathHelper.clamp(k1, 32, bottom - top - 8);
+			k1 = Mth.clamp(k1, 32, bottom - top - 8);
 			int l1 = (int)amountScrolled * (bottom - top - k1) / j1 + top;
 			if (l1 < top)
 				l1 = top;
 			
-			buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_COLOR);
-			buffer.pos(i, bottom + 1, 0.0D).tex(0.0D, 1.0D).color(0, 0, 0, 255).endVertex();
-			buffer.pos(j, bottom + 1, 0.0D).tex(1.0D, 1.0D).color(0, 0, 0, 255).endVertex();
-			buffer.pos(j, top - 1, 0.0D).tex(1.0D, 0.0D).color(0, 0, 0, 255).endVertex();
-			buffer.pos(i, top - 1, 0.0D).tex(0.0D, 0.0D).color(0, 0, 0, 255).endVertex();
-			tessellator.draw();
-			buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_COLOR);
-			buffer.pos(i + 1, (l1 + k1), 0.0D).tex(0.0D, 1.0D).color(139, 139, 139, 255).endVertex();
-			buffer.pos(j - 1, (l1 + k1), 0.0D).tex(1.0D, 1.0D).color(139, 139, 139, 255).endVertex();
-			buffer.pos(j - 1, l1, 0.0D).tex(1.0D, 0.0D).color(139, 139, 139, 255).endVertex();
-			buffer.pos(i + 1, l1, 0.0D).tex(0.0D, 0.0D).color(139, 139, 139, 255).endVertex();
-			tessellator.draw();
+			buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+			buffer.vertex(i, bottom + 1, 0.0D).tex(0.0D, 1.0D).color(0, 0, 0, 255).endVertex();
+			buffer.vertex(j, bottom + 1, 0.0D).tex(1.0D, 1.0D).color(0, 0, 0, 255).endVertex();
+			buffer.vertex(j, top - 1, 0.0D).uv(1.0D, 0.0D).color(0, 0, 0, 255).endVertex();
+			buffer.vertex(i, top - 1, 0.0D).uv(0.0D, 0.0D).color(0, 0, 0, 255).endVertex();
+			tessellator.end();
+			buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+			buffer.vertex(i + 1, (l1 + k1), 0.0D).uv(0.0D, 1.0D).color(139, 139, 139, 255).endVertex();
+			buffer.vertex(j - 1, (l1 + k1), 0.0D).uv(1.0D, 1.0D).color(139, 139, 139, 255).endVertex();
+			buffer.vertex(j - 1, l1, 0.0D).uv(1.0D, 0.0D).color(139, 139, 139, 255).endVertex();
+			buffer.vertex(i + 1, l1, 0.0D).uv(0.0D, 0.0D).color(139, 139, 139, 255).endVertex();
+			tessellator.end();
 		}
 		renderDecorations(mouseXIn, mouseYIn);
 		GlStateManager.enableTexture2D();

@@ -3,8 +3,7 @@ package com.phylogeny.extrabitmanipulation.config;
 import mod.chiselsandbits.api.APIExceptions.InvalidBitItem;
 import mod.chiselsandbits.api.IChiselAndBitsAPI;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.item.ItemStack;
-
+import net.minecraft.world.item.ItemStack;
 import com.phylogeny.extrabitmanipulation.api.ChiselsAndBitsAPIAccess;
 
 public class ConfigBitStack extends ConfigBitToolSettingBase<ItemStack>
@@ -67,7 +66,7 @@ public class ConfigBitStack extends ConfigBitToolSettingBase<ItemStack>
 	@Override
 	public boolean isAtDefaultValue()
 	{
-		return super.isAtDefaultValue() || ItemStack.areItemStacksEqual(value, defaultValue);
+		return super.isAtDefaultValue() || ItemStack.matches(value, defaultValue);
 	}
 	
 }

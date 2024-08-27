@@ -15,31 +15,30 @@ import mod.chiselsandbits.api.IBitAccess;
 import mod.chiselsandbits.api.IBitBrush;
 import mod.chiselsandbits.api.IChiselAndBitsAPI;
 import mod.chiselsandbits.api.ItemType;
-import net.minecraft.block.Block;
+import net.minecraft.ChatFormatting;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.text.TextFormatting;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.phys.AABB;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
-
+import com.mojang.blaze3d.platform.Lighting;
 import com.phylogeny.extrabitmanipulation.ExtraBitManipulation;
 import com.phylogeny.extrabitmanipulation.api.ChiselsAndBitsAPIAccess;
 import com.phylogeny.extrabitmanipulation.client.ClientHelper;
@@ -93,7 +92,7 @@ public class GuiBitMapping extends GuiContainer
 	private GuiTextField searchField;
 	private float previewStackScale;
 	private Vec3d previewStackRotation, previewStackTranslation, previewStackTranslationInitial;
-	private AxisAlignedBB previewStackBox;
+	private AABB previewStackBox;
 	
 	public GuiBitMapping(EntityPlayer player, boolean designMode)
 	{
@@ -134,7 +133,7 @@ public class GuiBitMapping extends GuiContainer
 				
 				if (regName.getResourceDomain().equals(ChiselsAndBitsReferences.MOD_ID))
 				{
-					Item item = Item.getItemFromBlock(block);
+					Item item = Item.byBlock(block);
 					if (item != Items.AIR)
 					{
 						ItemType itemType = api.getItemType(new ItemStack(item));
@@ -145,7 +144,7 @@ public class GuiBitMapping extends GuiContainer
 				if (BitIOHelper.isAir(block))
 					continue;
 				
-				IBlockState state = block.getDefaultState();
+				IBlockState state = block.defaultBlockState();
 				addBitToManualMap(state.getBlock().getDefaultState(), blockToBitMapPermanent, blockToBitMapAllBlocks);
 			}
 			blockToBitMapAllBlocks = getSortedLinkedBitMap(blockToBitMapAllBlocks);
@@ -361,7 +360,7 @@ public class GuiBitMapping extends GuiContainer
 		guiLeft -= 12;
 		int l = guiLeft + 128;
 		int t = guiTop + 21;
-		previewStackBox = new AxisAlignedBB(l, t, -1, l + 107, t + 100, 1);
+		previewStackBox = new AABB(l, t, -1, l + 107, t + 100, 1);
 		searchField = new GuiTextField(6, fontRenderer, guiLeft + 44, guiTop + 8, 65, 9);
 		searchField.setEnableBackgroundDrawing(false);
 		searchField.setTextColor(-1);
@@ -627,13 +626,13 @@ public class GuiBitMapping extends GuiContainer
 			GuiListBitMappingEntry entry = bitMappingList.getListEntry(i);
 			if (mouseY >= bitMappingList.top && mouseY <= bitMappingList.bottom)
 			{
-				RenderHelper.enableGUIStandardItemLighting();
+				Lighting.enableGUIStandardItemLighting();
 				int slotWidth = 19;
 				int k = bitMappingList.left + bitMappingList.width / 2 - bitMappingList.width / 2 + 5;
 				int l = bitMappingList.top + 4 + i * (bitMappingList.slotHeight) - bitMappingList.getAmountScrolled();
-				AxisAlignedBB slot = new AxisAlignedBB(k, l, -1, k + slotWidth, l + bitMappingList.slotHeight - 5, 1);
+				AABB slot = new AABB(k, l, -1, k + slotWidth, l + bitMappingList.slotHeight - 5, 1);
 				Vec3d mousePos = new Vec3d(mouseX, mouseY, 0);
-				if (slot.offset(38, 0, 0).contains(mousePos))
+				if (slot.move(38, 0, 0).contains(mousePos))
 				{
 					ArrayList<String> hoverTextList = new ArrayList<String>();
 					final String unmappedText = "The blockstate is currently mapped to nothing, as it cannot be chiseled.";
@@ -647,7 +646,7 @@ public class GuiBitMapping extends GuiContainer
 						String text = !bitStack.isEmpty() ? BitToolSettingsHelper.getBitName(bitStack) : (isAir ? "Empty / Air" : unmappedText);
 						if (!bitStack.isEmpty() || entry.isAir())
 						{
-							String text2 = TextFormatting.DARK_RED + (j == 0 ? "Bit:" : "	") + " " + TextFormatting.RESET;
+							String text2 = ChatFormatting.DARK_RED + (j == 0 ? "Bit:" : "	") + " " + ChatFormatting.RESET;
 							if (bitCountArray.size() > 1)
 								text2 = (j == 0 ? "" : " ") + text2.replace("Bit:", "Bits:");
 							
@@ -657,7 +656,7 @@ public class GuiBitMapping extends GuiContainer
 						}
 						if (!designMode && (buttonStates.selected ? stateToBitMapPermanent.containsKey(entry.getState())
 								: blockToBitMapPermanent.containsKey(entry.getState())))
-							text += TextFormatting.BLUE + " (manually mapped)";
+							text += ChatFormatting.BLUE + " (manually mapped)";
 						
 						hoverTextList.add(text);
 					}
@@ -667,13 +666,13 @@ public class GuiBitMapping extends GuiContainer
 					}
 					if (entry.isInteractive())
 					{
-						hoverTextList.add(!isShiftKeyDown() ? TextFormatting.AQUA + "  Hold SHIFT for usage instructions."
-								: TextFormatting.AQUA + "  - Click with bit or block on cursor to add mapping.");
+						hoverTextList.add(!isShiftKeyDown() ? ChatFormatting.AQUA + "  Hold SHIFT for usage instructions."
+								: ChatFormatting.AQUA + "  - Click with bit or block on cursor to add mapping.");
 						if (isShiftKeyDown())
 						{
-							hoverTextList.add(TextFormatting.AQUA + "  - Shift click with empty cursor to map to air.");
-							hoverTextList.add(TextFormatting.AQUA + "  - Control click with empty cursor to remove mapping.");
-							hoverTextList.add(TextFormatting.AQUA + "  - Middle mouse click blocks or bits in creative mode to get stack.");
+							hoverTextList.add(ChatFormatting.AQUA + "  - Shift click with empty cursor to map to air.");
+							hoverTextList.add(ChatFormatting.AQUA + "  - Control click with empty cursor to remove mapping.");
+							hoverTextList.add(ChatFormatting.AQUA + "  - Middle mouse click blocks or bits in creative mode to get stack.");
 						}
 					}
 					drawHoveringText(hoverTextList, mouseX, mouseY, mc.fontRenderer);
@@ -681,11 +680,11 @@ public class GuiBitMapping extends GuiContainer
 				else if (slot.contains(mousePos))
 				{
 					boolean stateMode = designMode || buttonStates.selected;
-					drawHoveringText(Arrays.<String>asList(new String[] {TextFormatting.DARK_RED + (stateMode ? "State" : "Block")
-							+ ": " + TextFormatting.RESET + (stateMode ? entry.getState().toString()
+					drawHoveringText(Arrays.<String>asList(new String[] {ChatFormatting.DARK_RED + (stateMode ? "State" : "Block")
+							+ ": " + ChatFormatting.RESET + (stateMode ? entry.getState().toString()
 									: Block.REGISTRY.getNameForObject(entry.getState().getBlock()))}), mouseX, mouseY, mc.fontRenderer);
 				}
-				RenderHelper.disableStandardItemLighting();
+				Lighting.turnOff();
 			}
 		}
 		
@@ -708,7 +707,7 @@ public class GuiBitMapping extends GuiContainer
 		}
 		GlStateManager.enableLighting();
 		GlStateManager.enableDepth();
-		RenderHelper.enableStandardItemLighting();
+		Lighting.turnBackOn();
 	}
 	
 	@Override
@@ -771,14 +770,14 @@ public class GuiBitMapping extends GuiContainer
 				GuiHelper.glScissor((int) previewStackBox.minX, (int) previewStackBox.minY,
 						(int) (previewStackBox.maxX - previewStackBox.minX),
 						(int) (previewStackBox.maxY - previewStackBox.minY));
-				RenderHelper.enableGUIStandardItemLighting();
+				Lighting.enableGUIStandardItemLighting();
 				GlStateManager.pushMatrix();
 				GlStateManager.translate(0.5 + previewStackTranslation.x, previewStackTranslation.y, 0);
 				RenderState.renderStateModelIntoGUI(null, RenderState.getItemModelWithOverrides(previewStack), previewStack, false,
 						guiLeft + 167, guiTop + 61, (float) previewStackRotation.x,
 						(float) previewStackRotation.y, previewStackScale);
 				GlStateManager.popMatrix();
-				RenderHelper.disableStandardItemLighting();
+				Lighting.turnOff();
 				GuiHelper.glScissorDisable();
 			}
 			else
@@ -790,12 +789,12 @@ public class GuiBitMapping extends GuiContainer
 			fontRenderer.drawSplitString("No " + (designMode || buttonStates.selected ? "States" : "Blocks") 
 					+ "      Found", getGuiLeft() + 31, guiTop + 63, 60, 4210752);
 		
-		RenderHelper.enableGUIStandardItemLighting();
+		Lighting.enableGUIStandardItemLighting();
 		ItemStack stack = mc.player.inventory.getItemStack();
 		GlStateManager.translate(0.0F, 0.0F, 32.0F);
 		zLevel = 800.0F;
 		itemRender.zLevel = 800.0F;
-		FontRenderer font = null;
+		Font font = null;
 		if (!stack.isEmpty())
 			font = stack.getItem().getFontRenderer(stack);
 		

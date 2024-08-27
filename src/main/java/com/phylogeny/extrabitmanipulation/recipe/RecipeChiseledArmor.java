@@ -3,14 +3,14 @@ package com.phylogeny.extrabitmanipulation.recipe;
 import java.util.Random;
 
 import mod.chiselsandbits.items.ItemChisel;
+import net.minecraft.core.NonNullList;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.inventory.InventoryCrafting;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.crafting.Ingredient;
-import net.minecraft.util.NonNullList;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraftforge.common.ForgeHooks;
 import net.minecraftforge.event.ForgeEventFactory;
 import net.minecraftforge.oredict.ShapelessOreRecipe;
@@ -46,7 +46,7 @@ public class RecipeChiseledArmor extends ShapelessOreRecipe
 			{
 				ItemStack chiselRemaining = stack.copy();
 				EntityPlayer player = ForgeHooks.getCraftingPlayer();
-				if (chiselRemaining.attemptDamageItem(bitCost, rand, player instanceof EntityPlayerMP ? (EntityPlayerMP) player : null))
+				if (chiselRemaining.hurt(bitCost, rand, player instanceof EntityPlayerMP ? (EntityPlayerMP) player : null))
 				{
 					ForgeEventFactory.onPlayerDestroyItem(player, stack, null);
 					chiselRemaining = ItemStack.EMPTY;

@@ -18,26 +18,26 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.model.ModelBiped;
 import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
-import net.minecraft.client.util.ITooltipFlag;
-import net.minecraft.entity.Entity;
+import net.minecraft.core.BlockPos;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EnumPlayerModelParts;
 import net.minecraft.inventory.EntityEquipmentSlot;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemArmor;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumFacing.Axis;
 import net.minecraft.util.EnumFacing.AxisDirection;
 import net.minecraft.util.EnumHand;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -134,10 +134,10 @@ public class ItemChiseledArmor extends ItemArmor
 	}
 	
 	@Override
-	public EnumActionResult onItemUse(EntityPlayer player, World world, BlockPos pos, EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ)
+	public EnumActionResult onItemUse(EntityPlayer player, Level world, BlockPos pos, EnumHand hand, EnumFacing facing, float hitX, float hitY, float hitZ)
 	{
 		ItemStack stack = player.getHeldItem(hand);
-		if (world.isRemote)
+		if (world.isClientSide)
 		{
 			ArmorBodyPartTemplateData templateData = new ArmorBodyPartTemplateData(ItemStackHelper.getNBTOrNew(stack), this);
 			Vec3d hit = new Vec3d(hitX, hitY, hitZ);
@@ -147,7 +147,7 @@ public class ItemChiseledArmor extends ItemArmor
 		return EnumActionResult.SUCCESS;
 	}
 	
-	public static EnumActionResult createBodyPartTemplate(EntityPlayer player, World world, BlockPos pos,
+	public static EnumActionResult createBodyPartTemplate(EntityPlayer player, Level world, BlockPos pos,
 			EnumFacing facing, Vec3d hit, ArmorBodyPartTemplateData templateData)
 	{
 		NBTTagCompound nbt = ItemStackHelper.getNBTOrNew(player.getHeldItemMainhand());
@@ -158,7 +158,7 @@ public class ItemChiseledArmor extends ItemArmor
 		IBitBrush bitBodyPartTemplate = null;
 		try
 		{
-			bitBodyPartTemplate = api.createBrushFromState(BlocksExtraBitManipulation.bodyPartTemplate.getDefaultState());
+			bitBodyPartTemplate = api.createBrushFromState(BlocksExtraBitManipulation.bodyPartTemplate.defaultBlockState());
 		}
 		catch (InvalidBitItem e)
 		{
@@ -166,7 +166,7 @@ public class ItemChiseledArmor extends ItemArmor
 		}
 		ItemStack bitStack = bitBodyPartTemplate.getItemStack(1);
 		hit = hit.addVector(pos.getX(), pos.getY(), pos.getZ());
-		AxisAlignedBB box = getBodyPartTemplateBox(player, facing, pos, hit, templateData.getScale(), templateData.getMovingPart());
+		AABB box = getBodyPartTemplateBox(player, facing, pos, hit, templateData.getScale(), templateData.getMovingPart());
 		boolean creativeMode = player.capabilities.isCreativeMode;
 		if (!creativeMode)
 		{
@@ -175,7 +175,7 @@ public class ItemChiseledArmor extends ItemArmor
 					- BitInventoryHelper.countInventoryBlocks(player, BlocksExtraBitManipulation.bodyPartTemplate) * 4096;
 			if (bitsMissing > 0)
 			{
-				if (world.isRemote)
+				if (world.isClientSide)
 					ClientHelper.printChatMessageWithDeletion("There are insufficient Bodypart Template blocks/bits in your inventory. Obtain " + bitsMissing
 							+ " Bodypart Template bits or blocks worth of bits (1 block = 4096 bits).");
 				
@@ -183,7 +183,7 @@ public class ItemChiseledArmor extends ItemArmor
 			}
 		}
 		int bitsPlaced = 0;
-		AxisAlignedBB boxBlocks = new AxisAlignedBB(Math.floor(box.minX), Math.floor(box.minY), Math.floor(box.minZ),
+		AABB boxBlocks = new AABB(Math.floor(box.minX), Math.floor(box.minY), Math.floor(box.minZ),
 				Math.ceil(box.maxX), Math.ceil(box.maxY), Math.ceil(box.maxZ));
 		try
 		{
@@ -200,7 +200,7 @@ public class ItemChiseledArmor extends ItemArmor
 		finally
 		{
 			api.endUndoGroup(player);
-			if (!world.isRemote && !creativeMode)
+			if (!world.isClientSide && !creativeMode)
 			{
 				bitsPlaced = BitInventoryHelper.removeOrAddInventoryBits(api, player, bitStack.copy(), bitsPlaced, false);
 				BitInventoryHelper.removeBitsFromBlocks(api, player, bitStack, BlocksExtraBitManipulation.bodyPartTemplate, bitsPlaced);
@@ -209,12 +209,12 @@ public class ItemChiseledArmor extends ItemArmor
 			if (bitsPlaced > 0)
 			{
 				ItemSculptingTool.playPlacementSound(player, world, pos, 1.0F);
-				if (world.isRemote)
+				if (world.isClientSide)
 					ClientHelper.printChatMessageWithDeletion("Created a " + getPartAndScaleText(templateData.getMovingPart(), templateData.getScale()) +
 							" and set collection reference area" );
 			}
 		}
-		if (!world.isRemote)
+		if (!world.isClientSide)
 		{
 			writeCollectionBoxToNBT(nbt, player.rotationYaw, player.isSneaking(), player.getHorizontalFacing().getOpposite(), pos, facing, hit);
 			player.getHeldItemMainhand().setTagCompound(nbt);
@@ -238,7 +238,7 @@ public class ItemChiseledArmor extends ItemArmor
 		nbt.setBoolean(NBTKeys.ARMOR_USE_BIT_GRID, useBitGrid);
 	}
 	
-	private static int placeBodyPartTemplateBits(World world, BlockPos pos, IChiselAndBitsAPI api, AxisAlignedBB box, IBitBrush bitBodyPartTemplate, int bitsPlaced)
+	private static int placeBodyPartTemplateBits(Level world, BlockPos pos, IChiselAndBitsAPI api, AABB box, IBitBrush bitBodyPartTemplate, int bitsPlaced)
 	{
 		IBitAccess bitAccess;
 		try
@@ -278,12 +278,12 @@ public class ItemChiseledArmor extends ItemArmor
 		return bitsPlaced;
 	}
 	
-	public static AxisAlignedBB getBodyPartTemplateBox(EntityPlayer player, EnumFacing facingPlacement, BlockPos pos, Vec3d hit, int scale, ArmorMovingPart part)
+	public static AABB getBodyPartTemplateBox(EntityPlayer player, EnumFacing facingPlacement, BlockPos pos, Vec3d hit, int scale, ArmorMovingPart part)
 	{
 		return getBodyPartTemplateBox(player.rotationYaw, player.isSneaking(), player.getHorizontalFacing(), facingPlacement, pos, hit, scale, part);
 	}
 	
-	public static AxisAlignedBB getBodyPartTemplateBox(float playerYaw, boolean useBitGrid, EnumFacing facingBox,
+	public static AABB getBodyPartTemplateBox(float playerYaw, boolean useBitGrid, EnumFacing facingBox,
 			EnumFacing facingPlacement, BlockPos pos, Vec3d hit, int scale, ArmorMovingPart part)
 	{
 		scale = (int) Math.pow(2, scale);
@@ -302,7 +302,7 @@ public class ItemChiseledArmor extends ItemArmor
 		int offsetY = facingPlacement.getFrontOffsetY();
 		int offsetZ = facingPlacement.getFrontOffsetZ();
 		double x2, y2, z2;
-		AxisAlignedBB box = null;
+		AABB box = null;
 		if (useBitGrid)
 		{
 			float hitX = (float) hit.x - pos.getX();
@@ -315,9 +315,9 @@ public class ItemChiseledArmor extends ItemArmor
 				y2 = bitLoc.getBitY() * Utility.PIXEL_D;
 				z2 = bitLoc.getBitZ() * Utility.PIXEL_D;
 				double offset = facingPlacement.getAxisDirection() == AxisDirection.POSITIVE ? Utility.PIXEL_D : 0;
-				box = new AxisAlignedBB(x2 - semiDiameterX, y2 - semiDiameterY, z2 - semiDiameterZ, x2 + semiDiameterX, y2 + semiDiameterY,
-						z2 + semiDiameterZ).offset((semiDiameterX + offset) * offsetX, (semiDiameterY + offset) * offsetY,
-							(semiDiameterZ + offset) * offsetZ).offset(pos);
+				box = new AABB(x2 - semiDiameterX, y2 - semiDiameterY, z2 - semiDiameterZ, x2 + semiDiameterX, y2 + semiDiameterY,
+						z2 + semiDiameterZ).move((semiDiameterX + offset) * offsetX, (semiDiameterY + offset) * offsetY,
+							(semiDiameterZ + offset) * offsetZ).move(pos);
 			}
 		}
 		else
@@ -325,15 +325,15 @@ public class ItemChiseledArmor extends ItemArmor
 			x2 = pos.getX() + 0.5;
 			y2 = pos.getY() + 0.5;
 			z2 = pos.getZ() + 0.5;
-			box = new AxisAlignedBB(x2 - semiDiameterX, y2 - semiDiameterY, z2 - semiDiameterZ, x2 + semiDiameterX, y2 + semiDiameterY,
-					z2 + semiDiameterZ).offset(0, (semiDiameterY - 0.5) * (offsetY != 0 ? offsetY : 1), 0).offset(offsetX, offsetY,offsetZ);
+			box = new AABB(x2 - semiDiameterX, y2 - semiDiameterY, z2 - semiDiameterZ, x2 + semiDiameterX, y2 + semiDiameterY,
+					z2 + semiDiameterZ).move(0, (semiDiameterY - 0.5) * (offsetY != 0 ? offsetY : 1), 0).move(offsetX, offsetY,offsetZ);
 			if (scale == 4 && bodyPart != BodyPartTemplate.LIMB)
 			{
 				if (facingBox.getAxis() != Axis.X || isHead)
-					box = box.offset((facingPlacement.getAxis() == Axis.X ? (facingPlacement.getAxisDirection() == AxisDirection.POSITIVE)
+					box = box.move((facingPlacement.getAxis() == Axis.X ? (facingPlacement.getAxisDirection() == AxisDirection.POSITIVE)
 							: (playerYaw % 360 > (playerYaw > 0 ? 180 : -180))) ? 0.5 : -0.5, 0, 0);
 				if (facingBox.getAxis() == Axis.X || isHead)
-					box = box.offset(0, 0, (facingPlacement.getAxis() == Axis.Z ? (facingPlacement.getAxisDirection() == AxisDirection.POSITIVE)
+					box = box.move(0, 0, (facingPlacement.getAxis() == Axis.Z ? (facingPlacement.getAxisDirection() == AxisDirection.POSITIVE)
 							: ((playerYaw - 90) % 360 > (playerYaw > 90 ? 180 : -180))) ? 0.5 : -0.5);
 			}																																																			
 		}
@@ -345,9 +345,9 @@ public class ItemChiseledArmor extends ItemArmor
 		ItemStack stack = player.getHeldItemMainhand();
 		NBTTagCompound nbt = ItemStackHelper.getNBTOrNew(stack);
 		DataChiseledArmorPiece armorPiece = new DataChiseledArmorPiece(nbt, ((ItemChiseledArmor) stack.getItem()).armorType);
-		World world = player.world;
-		AxisAlignedBB boxCollection = collectionData.getCollectionBox();
-		AxisAlignedBB boxBlocks = new AxisAlignedBB(Math.floor(boxCollection.minX), Math.floor(boxCollection.minY), Math.floor(boxCollection.minZ),
+		Level world = player.world;
+		AABB boxCollection = collectionData.getCollectionBox();
+		AABB boxBlocks = new AABB(Math.floor(boxCollection.minX), Math.floor(boxCollection.minY), Math.floor(boxCollection.minZ),
 				Math.ceil(boxCollection.maxX), Math.ceil(boxCollection.maxY), Math.ceil(boxCollection.maxZ));
 		IChiselAndBitsAPI api = ChiselsAndBitsAPIAccess.apiInstance;
 		ArmorMovingPart movingPart = collectionData.getMovingPart();
@@ -368,7 +368,7 @@ public class ItemChiseledArmor extends ItemArmor
 		}
 		if (blocksCollected > 0)
 		{
-			if (world.isRemote)
+			if (world.isClientSide)
 			{
 				ClientHelper.printChatMessageWithDeletion("Imported " + blocksCollected + " block cop" + (blocksCollected > 1 ? "ies" : "y") +
 						" at " + SCALE_TITLES[collectionData.getScale()] + " scale into the " + collectionData.getMovingPart().getName().toLowerCase());
@@ -383,7 +383,7 @@ public class ItemChiseledArmor extends ItemArmor
 		return blocksCollected > 0;
 	}
 	
-	private static int collectBits(World world, BlockPos pos, IChiselAndBitsAPI api, AxisAlignedBB boxCollection, EnumFacing facingBox,
+	private static int collectBits(Level world, BlockPos pos, IChiselAndBitsAPI api, AABB boxCollection, EnumFacing facingBox,
 			Vec3d orginBox, float scale, DataChiseledArmorPiece armorPiece, ArmorMovingPart movingPart, int blocksCollected)
 	{
 		IBitAccess bitAccess;
@@ -407,7 +407,7 @@ public class ItemChiseledArmor extends ItemArmor
 				for (int k = 0; k < 16; k++)
 				{
 					IBitBrush bit = bitAccess.getBitAt(i, j, k);
-					if (bit.isAir() || bit.getState() == BlocksExtraBitManipulation.bodyPartTemplate.getDefaultState())
+					if (bit.isAir() || bit.getState() == BlocksExtraBitManipulation.bodyPartTemplate.defaultBlockState())
 						continue;
 					
 					double x = pos.getX() + i * Utility.PIXEL_D + 0.5 * Utility.PIXEL_D;
@@ -419,7 +419,7 @@ public class ItemChiseledArmor extends ItemArmor
 					
 					try
 					{
-						if (!world.isRemote)
+						if (!world.isClientSide)
 							bitAccessNew.setBitAt(i, j, k, bit);
 						
 						bitsCollected = true;
@@ -428,7 +428,7 @@ public class ItemChiseledArmor extends ItemArmor
 				}
 			}
 		}
-		if (!world.isRemote && bitsCollected)
+		if (!world.isClientSide && bitsCollected)
 		{
 			ArmorItem armorItem = new ArmorItem(bitAccessNew.getBitsAsItem(null, ItemType.CHISLED_BLOCK, false));
 			if (facingBox != EnumFacing.NORTH)
@@ -437,7 +437,7 @@ public class ItemChiseledArmor extends ItemArmor
 			if (scale != 1)
 				armorItem.addGlOperation(GlOperation.createScale(scale, scale, scale));
 			
-			AxisAlignedBB box = new AxisAlignedBB(pos);
+			AABB box = new AABB(pos);
 			float x = (float) (box.minX - orginBox.x);
 			float y = (float) (box.minY - orginBox.y);
 			float z = (float) (box.minZ - orginBox.z);
@@ -454,7 +454,7 @@ public class ItemChiseledArmor extends ItemArmor
 	
 	@Override
 	@SideOnly(Side.CLIENT)
-	public void addInformation(ItemStack stack, @Nullable World world, List<String> tooltip, ITooltipFlag flag)
+	public void addInformation(ItemStack stack, @Nullable Level world, List<String> tooltip, TooltipFlag flag)
 	{
 		boolean shiftDown = GuiScreen.isShiftKeyDown();
 		boolean ctrlDown = GuiScreen.isCtrlKeyDown();

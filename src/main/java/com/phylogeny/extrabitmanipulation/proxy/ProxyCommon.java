@@ -2,13 +2,13 @@ package com.phylogeny.extrabitmanipulation.proxy;
 
 import mod.chiselsandbits.core.ChiselsAndBits;
 import net.minecraft.block.BlockDispenser;
+import net.minecraft.core.Position;
 import net.minecraft.dispenser.BehaviorProjectileDispense;
-import net.minecraft.dispenser.IPosition;
 import net.minecraft.entity.IProjectile;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.World;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.fml.common.Loader;
@@ -67,9 +67,9 @@ public class ProxyCommon implements IGuiHandler
 		BlockDispenser.DISPENSE_BEHAVIOR_REGISTRY.putObject(ChiselsAndBits.getItems().itemBlockBit, new BehaviorProjectileDispense()
 		{
 			@Override
-			protected IProjectile getProjectileEntity(World worldIn, IPosition position, ItemStack stackIn)
+			protected IProjectile getProjectileEntity(Level worldIn, Position position, ItemStack stackIn)
 			{
-				return new EntityBit(worldIn, position.getX(), position.getY(), position.getZ(), stackIn);
+				return new EntityBit(worldIn, position.x(), position.y(), position.z(), stackIn);
 			}
 		});
 		ReflectionExtraBitManipulation.initReflectionFieldsCommon();
@@ -100,7 +100,7 @@ public class ProxyCommon implements IGuiHandler
 	}
 	
 	@Override
-	public Object getServerGuiElement(int id, EntityPlayer player, World world, int unused0, int unused1, int unused2)
+	public Object getServerGuiElement(int id, EntityPlayer player, Level world, int unused0, int unused1, int unused2)
 	{
 		if (openBitMappingGui(id, player.getHeldItemMainhand()))
 			return createBitMappingContainer(player);
@@ -115,7 +115,7 @@ public class ProxyCommon implements IGuiHandler
 	}
 	
 	@Override
-	public Object getClientGuiElement(int id, EntityPlayer player, World world, int unused0, int unused1, int unused2)
+	public Object getClientGuiElement(int id, EntityPlayer player, Level world, int unused0, int unused1, int unused2)
 	{
 		if (openBitMappingGui(id, player.getHeldItemMainhand()))
 			return new GuiBitMapping(player, ItemStackHelper.isDesignStack(player.getHeldItemMainhand()));

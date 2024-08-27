@@ -1,9 +1,9 @@
 package com.phylogeny.extrabitmanipulation.init;
 
 import mod.chiselsandbits.api.ItemType;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.settings.KeyBinding;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.client.settings.IKeyConflictContext;
 import net.minecraftforge.client.settings.KeyConflictContext;
 import net.minecraftforge.client.settings.KeyModifier;
@@ -156,7 +156,7 @@ public enum KeyBindingsExtraBitManipulation implements IKeyConflictContext
 		}
 	};
 	
-	protected KeyBinding keyBinding;
+	protected KeyMapping keyBinding;
 	protected String description = "";
 	private boolean anyConflicts;
 	
@@ -169,18 +169,18 @@ public enum KeyBindingsExtraBitManipulation implements IKeyConflictContext
 	{
 		this.description = description;
 		this.anyConflicts = anyConflicts;
-		keyBinding = new KeyBinding("keybinding." + Reference.MOD_ID + "." + description.toLowerCase(),
+		keyBinding = new KeyMapping("keybinding." + Reference.MOD_ID + "." + description.toLowerCase(),
 				this, getModifier(), defaultKeyCode, "itemGroup." + Reference.MOD_ID);
 	}
 	
 	public boolean isKeyDown()
 	{
-		return getKeyBinding().isKeyDown();
+		return getKeyBinding().isDown();
 	}
 	
 	protected boolean isKeyDown(boolean defaultCheck)
 	{
-		return getKeyBinding().getKeyCode() == Keyboard.KEY_NONE ? defaultCheck : getKeyBinding().isKeyDown();
+		return getKeyBinding().getKeyCode() == Keyboard.KEY_NONE ? defaultCheck : getKeyBinding().isDown();
 	}
 	
 	public static void init()
@@ -204,7 +204,7 @@ public enum KeyBindingsExtraBitManipulation implements IKeyConflictContext
 		return keyBinding.isSetToDefaultValue() ? description.toUpperCase() : ("[" + keyBinding.getDisplayName() + "]");
 	}
 	
-	public KeyBinding getKeyBinding()
+	public KeyMapping getKeyBinding()
 	{
 		return keyBinding;
 	}

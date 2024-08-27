@@ -3,11 +3,9 @@ package com.phylogeny.extrabitmanipulation.block;
 import java.util.List;
 
 import javax.annotation.Nullable;
-
-import net.minecraft.block.material.Material;
-import net.minecraft.client.util.ITooltipFlag;
-import net.minecraft.item.ItemStack;
-import net.minecraft.world.World;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -22,7 +20,7 @@ public class BlockBodyPartTemplate extends BlockExtraBitManipulationBase
 	
 	@Override
 	@SideOnly(Side.CLIENT)
-	public void addInformation(ItemStack stack, @Nullable World player, List<String> tooltip, ITooltipFlag advanced)
+	public void addInformation(ItemStack stack, @Nullable Level player, List<String> tooltip, TooltipFlag advanced)
 	{
 		tooltip.add("The bits of this block are used as bodypart placeholders in the creation of chiseled armor.");
 	}

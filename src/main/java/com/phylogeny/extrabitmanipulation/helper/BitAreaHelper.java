@@ -1,19 +1,18 @@
 package com.phylogeny.extrabitmanipulation.helper;
 
 import javax.annotation.Nullable;
-
+import net.minecraft.core.BlockPos;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagDouble;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumFacing.AxisDirection;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
-import net.minecraft.world.World;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraftforge.common.util.Constants.NBT;
 
 import com.phylogeny.extrabitmanipulation.ExtraBitManipulation;
@@ -58,12 +57,12 @@ public class BitAreaHelper
 	
 	public static BlockPos readBlockPosFromNBT(NBTTagCompound nbt, String key)
 	{
-		return BlockPos.fromLong(nbt.getLong(key));
+		return BlockPos.of(nbt.getLong(key));
 	}
 	
 	public static void writeBlockPosToNBT(BlockPos pos, NBTTagCompound nbt, String key)
 	{
-		nbt.setLong(key, pos.toLong());
+		nbt.setLong(key, pos.asLong());
 	}
 	
 	public static Vec3d getBitGridOffset(EnumFacing side, boolean inside, float hitX, float hitY, float hitZ, boolean removeBits)
@@ -101,7 +100,7 @@ public class BitAreaHelper
 		return new Vec3d(x, y, z);
 	}
 	
-	public static boolean readBlockStates(ItemStack stack, EntityPlayer player, World world, BlockPos pos,
+	public static boolean readBlockStates(ItemStack stack, EntityPlayer player, Level world, BlockPos pos,
 			Vec3d hit, Vec3i drawnStartPoint, ModelReadData modelingData)
 	{
 		ItemModelingTool modelingTool = (ItemModelingTool) (ItemStackHelper.isModelingToolStack(stack) ? stack.getItem() : null);
@@ -124,8 +123,8 @@ public class BitAreaHelper
 	public static ModelingBoxSet getModelingToolBoxSet(EntityPlayer player, int x, int y, int z, Vec3d hit,
 			Vec3i drawnStartPointModelingTool, boolean addToBoxForRender, int modelAreaMode, int modeSnapToChunk)
 	{
-		AxisAlignedBB boxBounding = null;
-		AxisAlignedBB boxPoint = null;
+		AABB boxBounding = null;
+		AABB boxPoint = null;
 		if (modelAreaMode == 2)
 		{
 			if (drawnStartPointModelingTool != null)
@@ -160,7 +159,7 @@ public class BitAreaHelper
 						z2++;
 					}
 				}
-				boxBounding = new AxisAlignedBB(x2, y2, z2,
+				boxBounding = new AABB(x2, y2, z2,
 						Math.abs(x2 - x) <= 16 ? x : (x2 - x > 0 ? x2 - 16 : x2 + 16),
 						Math.abs(y2 - y) <= 16 ? y : (y2 - y > 0 ? y2 - 16 : y2 + 16),
 						Math.abs(z2 - z) <= 16 ? z : (z2 - z > 0 ? z2 - 16 : z2 + 16));
@@ -171,9 +170,9 @@ public class BitAreaHelper
 			int hitX = (int) Math.round(hit.x);
 			int hitY = (int) Math.round(hit.y);
 			int hitZ = (int) Math.round(hit.z);
-			boxBounding = new AxisAlignedBB(hitX, hitY, hitZ, hitX, hitY, hitZ);
-			boxPoint = boxBounding.grow(0.005);
-			boxBounding = boxBounding.grow(8);
+			boxBounding = new AABB(hitX, hitY, hitZ, hitX, hitY, hitZ);
+			boxPoint = boxBounding.inflate(0.005);
+			boxBounding = boxBounding.inflate(8);
 			if (modelAreaMode == 1)
 			{
 				float yaw = Math.abs(player.rotationYaw) % 360;
@@ -204,7 +203,7 @@ public class BitAreaHelper
 						angleZ = 0;
 					}
 				}
-				boxBounding = boxBounding.offset(yaw > angleX ? greaterX : lesserX,
+				boxBounding = boxBounding.move(yaw > angleX ? greaterX : lesserX,
 						player.rotationPitch > 0 ? -8 : 8, yaw > angleZ ? greaterZ : lesserZ);
 			}
 			if (modeSnapToChunk > 0)
@@ -228,8 +227,8 @@ public class BitAreaHelper
 				double offsetX = x - boxBounding.minX;
 				double offsetY = y - boxBounding.minY;
 				double offsetZ = z - boxBounding.minZ;
-				boxBounding = boxBounding.offset(offsetX, offsetY, offsetZ);
-				boxPoint = boxPoint.offset(offsetX, offsetY, offsetZ);
+				boxBounding = boxBounding.move(offsetX, offsetY, offsetZ);
+				boxPoint = boxPoint.move(offsetX, offsetY, offsetZ);
 			}
 		}
 		return new ModelingBoxSet(boxBounding, boxPoint);
@@ -237,20 +236,20 @@ public class BitAreaHelper
 	
 	public static class ModelingBoxSet
 	{
-		private AxisAlignedBB boxBounding, boxPoint;
+		private AABB boxBounding, boxPoint;
 		
-		public ModelingBoxSet(@Nullable AxisAlignedBB boxBounding, @Nullable AxisAlignedBB boxPoint)
+		public ModelingBoxSet(@Nullable AABB boxBounding, @Nullable AABB boxPoint)
 		{
 			this.boxBounding = boxBounding;
 			this.boxPoint = boxPoint;
 		}
 		
-		public AxisAlignedBB getBoundingBox()
+		public AABB getBoundingBox()
 		{
 			return boxBounding;
 		}
 		
-		public AxisAlignedBB getPoint()
+		public AABB getPoint()
 		{
 			return boxPoint;
 		}

@@ -4,9 +4,8 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.OpenGlHelper;
-import net.minecraft.client.renderer.RenderHelper;
-import net.minecraft.item.ItemStack;
-
+import net.minecraft.world.item.ItemStack;
+import com.mojang.blaze3d.platform.Lighting;
 import com.phylogeny.extrabitmanipulation.ExtraBitManipulation;
 import com.phylogeny.extrabitmanipulation.armor.ArmorItem;
 import com.phylogeny.extrabitmanipulation.client.ClientHelper;
@@ -27,13 +26,13 @@ public class GuiListEntryArmorItem extends GuiListEntryChiseledArmor<ArmorItem>
 		slotHovered = mouseX > x + 4 && mouseX < x + 23 && mouseY > y && mouseY < y + 19;
 		x += 5;
 		y += 1;
-		RenderHelper.enableGUIStandardItemLighting();
+		Lighting.enableGUIStandardItemLighting();
 		OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240.0F, 240.0F);
 		ClientHelper.bindTexture(GuiChiseledArmor.TEXTURE_GUI);
 		GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 		GlStateManager.disableLighting();
 		Gui.drawModalRectWithCustomSizedTexture(x, y, 0, 230, 18, 18, 512, 512);
-		mc.fontRenderer.drawString("" + (slotIndex + 1), x + 21, y + 5, -1);
+		mc.font.draw("" + (slotIndex + 1), x + 21, y + 5, -1);
 	}
 	
 	@Override
@@ -42,13 +41,13 @@ public class GuiListEntryArmorItem extends GuiListEntryChiseledArmor<ArmorItem>
 		super.mousePressed(slotIndex, mouseX, mouseY, mouseEvent, relativeX, relativeY);
 		if (slotClicked(relativeX, relativeY))
 		{
-			ItemStack stack = mc.player.inventory.getItemStack();
+			ItemStack stack = mc.player.inventory.getCarried();
 			if (stack.isEmpty() && mouseEvent == 2 && mc.player.capabilities.isCreativeMode)
 			{
 				ItemStack stack2 = entryObject.getStack().copy();
 				if (!stack2.isEmpty())
 				{
-					mc.player.inventory.setItemStack(stack2);
+					mc.player.inventory.setCarried(stack2);
 					ExtraBitManipulation.packetNetwork.sendToServer(new PacketCursorStack(stack2));
 				}
 			}

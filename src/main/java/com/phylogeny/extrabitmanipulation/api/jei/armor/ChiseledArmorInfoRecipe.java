@@ -6,8 +6,7 @@ import java.util.List;
 
 import mezz.jei.api.IGuiHelper;
 import net.minecraft.client.Minecraft;
-import net.minecraft.item.ItemStack;
-
+import net.minecraft.world.item.ItemStack;
 import com.phylogeny.extrabitmanipulation.api.jei.InfoRecipeBase;
 import com.phylogeny.extrabitmanipulation.client.ClientHelper;
 import com.phylogeny.extrabitmanipulation.client.GuiHelper;
@@ -55,8 +54,8 @@ public class ChiseledArmorInfoRecipe extends InfoRecipeBase
 		ClientHelper.bindTexture(image);
 		GuiHelper.drawTexturedRect(imageBox.getMinX(), imageBox.getMinY(), imageBox.getMaxX(), imageBox.getMaxY());
 		xPos = 82;
-		yPos = slotDrawable.getHeight() / 2 - minecraft.fontRenderer.FONT_HEIGHT / 2;
-		minecraft.fontRenderer.drawString(name, xPos, yPos, Color.black.getRGB());
+		yPos = slotDrawable.getHeight() / 2 - minecraft.font.lineHeight / 2;
+		minecraft.font.draw(name, xPos, yPos, Color.black.getRGB());
 		String text = this.text;
 		int wrapWidth = 60;
 		if (imageIndex == 0)
@@ -85,10 +84,10 @@ public class ChiseledArmorInfoRecipe extends InfoRecipeBase
 				yPos += 3;
 			}
 		}
-		for (String s : minecraft.fontRenderer.listFormattedStringToWidth(text, wrapWidth))
+		for (String s : minecraft.font.listFormattedStringToWidth(text, wrapWidth))
 		{
-			minecraft.fontRenderer.drawString(s, xPos - minecraft.fontRenderer.getStringWidth(s) / 2, yPos, Color.black.getRGB());
-			yPos += minecraft.fontRenderer.FONT_HEIGHT;
+			minecraft.font.draw(s, xPos - minecraft.font.width(s) / 2, yPos, Color.black.getRGB());
+			yPos += minecraft.font.lineHeight;
 		}
 	}
 	

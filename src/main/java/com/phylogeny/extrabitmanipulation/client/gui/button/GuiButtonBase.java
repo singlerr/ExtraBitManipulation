@@ -8,10 +8,9 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.audio.SoundHandler;
 import net.minecraft.client.gui.GuiButton;
-import net.minecraft.util.SoundEvent;
-
+import net.minecraft.client.sounds.SoundManager;
+import net.minecraft.sounds.SoundEvent;
 import com.phylogeny.extrabitmanipulation.init.SoundsExtraBitManipulation;
 
 public class GuiButtonBase extends GuiButton
@@ -41,7 +40,7 @@ public class GuiButtonBase extends GuiButton
 	}
 	
 	@Override
-	public void playPressSound(SoundHandler soundHandler)
+	public void playPressSound(SoundManager soundHandler)
 	{
 		if (silent)
 			return;

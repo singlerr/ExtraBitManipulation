@@ -12,8 +12,8 @@ import mezz.jei.api.JEIPlugin;
 import mezz.jei.api.recipe.IRecipeCategoryRegistration;
 import mod.chiselsandbits.core.ChiselsAndBits;
 import mod.chiselsandbits.registry.ModItems;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.oredict.OreDictionary;
 
 import com.phylogeny.extrabitmanipulation.api.jei.armor.ChiseledArmorInfoRecipe;
@@ -65,7 +65,7 @@ public class JustEnoughItemsPlugin implements IModPlugin
 				ItemsExtraBitManipulation.chiseledBootsDiamond, ItemsExtraBitManipulation.chiseledHelmetIron,
 				ItemsExtraBitManipulation.chiseledChestplateIron, ItemsExtraBitManipulation.chiseledLeggingsIron,
 				ItemsExtraBitManipulation.chiseledBootsIron);
-		Item templateItem = Item.getItemFromBlock(BlocksExtraBitManipulation.bodyPartTemplate);
+		Item templateItem = Item.byBlock(BlocksExtraBitManipulation.bodyPartTemplate);
 		addDescription(registry, templateItem);
 		IGuiHelper guiHelper = registry.getJeiHelpers().getGuiHelper();
 		registry.handleRecipes(ShapeInfoRecipe.class, new ShapeInfoRecipeHandler(), ShapeInfoRecipeCategory.UID);

@@ -6,30 +6,27 @@ import java.util.Collections;
 import java.util.List;
 
 import javax.annotation.Nullable;
-
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.OpenGlHelper;
-import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.ClickType;
 import net.minecraft.inventory.Slot;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.text.TextFormatting;
-
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.AABB;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
-
+import com.mojang.blaze3d.platform.Lighting;
 import com.phylogeny.extrabitmanipulation.ExtraBitManipulation;
 import com.phylogeny.extrabitmanipulation.armor.ArmorItem;
 import com.phylogeny.extrabitmanipulation.armor.DataChiseledArmorPiece;
@@ -97,8 +94,8 @@ public class GuiChiseledArmor extends GuiContainer
 									buttonAddRotation, buttonAddTranslation, buttonAddScale;
 	private GuiButtonSelect buttonGlItems, buttonGlPre, buttonGlPost, buttonScale;
 	private GuiButtonHelp buttonHelp;
-	private AxisAlignedBB boxPlayer, boxArmorItem, boxGlOperation, boxTitleItems, boxTitleGlOperations;
-	private AxisAlignedBB[] boxesData = new AxisAlignedBB[4];
+	private AABB boxPlayer, boxArmorItem, boxGlOperation, boxTitleItems, boxTitleGlOperations;
+	private AABB[] boxesData = new AABB[4];
 	private boolean playerBoxClicked;
 	private int indexArmorSet,selectedTabIndex, selectedSubTabIndex, mouseInitialX, mouseInitialY;
 	private float playerScale;
@@ -195,18 +192,18 @@ public class GuiChiseledArmor extends GuiContainer
 		super.initGui();
 		int left = guiLeft + 223;
 		int top = guiTop + 130;
-		boxPlayer = new AxisAlignedBB(left, top, -1, left + 85, top + 92, 1);
+		boxPlayer = new AABB(left, top, -1, left + 85, top + 92, 1);
 		left = guiLeft + 91;
 		top = guiTop + 36;
-		boxGlOperation = new AxisAlignedBB(left, top, -1, left + 212, top + 88, 1);
+		boxGlOperation = new AABB(left, top, -1, left + 212, top + 88, 1);
 		left = guiLeft + 37;
 		top = guiTop + 24;
-		boxArmorItem = new AxisAlignedBB(left, top, -1, left + 41, top + 100, 1);
+		boxArmorItem = new AABB(left, top, -1, left + 41, top + 100, 1);
 		left = guiLeft + 39;
 		top = guiTop + 9;
-		boxTitleItems = new AxisAlignedBB(left, top, -1, left + 33, top + 14, 1);
+		boxTitleItems = new AABB(left, top, -1, left + 33, top + 14, 1);
 		left = guiLeft + 92;
-		boxTitleGlOperations = new AxisAlignedBB(left, top, -1, left + 77, top + 14, 1);
+		boxTitleGlOperations = new AABB(left, top, -1, left + 77, top + 14, 1);
 		left = guiLeft + 126;
 		top = guiTop + 24;
 		for (int i = 0; i < boxesData.length; i++)
@@ -218,7 +215,7 @@ public class GuiChiseledArmor extends GuiContainer
 				left2 -= 8;
 				width++;
 			}
-			boxesData[i] = new AxisAlignedBB(left2, top, -1, left2 + width, top + 11, 1);
+			boxesData[i] = new AABB(left2, top, -1, left2 + width, top + 11, 1);
 		}
 		glOperationHoverKeysHelpText = "\n\nKey presses manipulate GL operations as follows:\n" + getPointMain("Control + C") + " copy\n" +
 				getPointMain("Control + V") + " paste\n" + getPointMain("Delete") + " delete\n" + getPointMain("Up Arrow") + " move up\n" +
@@ -396,7 +393,7 @@ public class GuiChiseledArmor extends GuiContainer
 			{
 				tab.displayString = "V" + i;
 				tab.setHoverHelpText(hoverText, " ", "Armor worn in a vanity slot, which will render " +
-				TextFormatting.BLUE + (i < 2 ? "in place of" : "in addition to") + TextFormatting.WHITE + " the main armor.");
+				ChatFormatting.BLUE + (i < 2 ? "in place of" : "in addition to") + ChatFormatting.WHITE + " the main armor.");
 			}
 			tabButtonsArmorSet[i] = tab;
 			buttonList.add(tab);
@@ -429,22 +426,22 @@ public class GuiChiseledArmor extends GuiContainer
 	
 	public static String getPointMain(String point)
 	{
-		return TextFormatting.AQUA + point + TextFormatting.RESET;
+		return ChatFormatting.AQUA + point + ChatFormatting.RESET;
 	}
 	
 	public static String getPointSub(String point)
 	{
-		return "    " + TextFormatting.GREEN + point + TextFormatting.RESET;
+		return "    " + ChatFormatting.GREEN + point + ChatFormatting.RESET;
 	}
 	
 	public static String getPointExample()
 	{
-		return TextFormatting.YELLOW + "Ex:" + TextFormatting.RESET;
+		return ChatFormatting.YELLOW + "Ex:" + ChatFormatting.RESET;
 	}
 	
 	public static String underlineText(String text)
 	{
-		return TextFormatting.UNDERLINE + text + TextFormatting.RESET;
+		return ChatFormatting.UNDERLINE + text + ChatFormatting.RESET;
 	}
 	
 	private ArmorType getArmorSlot(int index)
@@ -761,7 +758,7 @@ public class GuiChiseledArmor extends GuiContainer
 			if (stack.isEmpty())
 				continue;
 			
-			RenderHelper.enableGUIStandardItemLighting();
+			Lighting.enableGUIStandardItemLighting();
 			OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, 240.0F, 240.0F);
 			GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
 			x = armorItemsList.left + 6 - guiLeft;
@@ -814,12 +811,12 @@ public class GuiChiseledArmor extends GuiContainer
 			drawRect((int) boxTitleItems.minX, (int) boxTitleItems.minY, (int) boxTitleItems.maxX, (int) boxTitleItems.maxY, HELP_TEXT_BACKGROUNG_COLOR);
 			drawRect((int) boxTitleGlOperations.minX, (int) boxTitleGlOperations.minY,
 					(int) boxTitleGlOperations.maxX, (int) boxTitleGlOperations.maxY, HELP_TEXT_BACKGROUNG_COLOR);
-			for (AxisAlignedBB box : boxesData)
+			for (AABB box : boxesData)
 				drawRect((int) box.minX, (int) box.minY, (int) box.maxX, (int) box.maxY, HELP_TEXT_BACKGROUNG_COLOR);
 		}
 	}
 	
-	private void glScissorBox(AxisAlignedBB box)
+	private void glScissorBox(AABB box)
 	{
 		GuiHelper.glScissor((int) box.minX, (int) box.minY, (int) (box.maxX - box.minX), (int) (box.maxY - box.minY));
 	}
@@ -836,7 +833,7 @@ public class GuiChiseledArmor extends GuiContainer
 		float f3 = entity.prevRotationYawHead;
 		float f4 = entity.rotationYawHead;
 		GlStateManager.rotate(135.0F, 0.0F, 1.0F, 0.0F);
-		RenderHelper.enableStandardItemLighting();
+		Lighting.turnBackOn();
 		if (buttonFullIlluminationOn.selected)
 			GlStateManager.disableLighting();
 		
@@ -858,7 +855,7 @@ public class GuiChiseledArmor extends GuiContainer
 		entity.prevRotationYawHead = f3;
 		entity.rotationYawHead = f4;
 		GlStateManager.popMatrix();
-		RenderHelper.disableStandardItemLighting();
+		Lighting.turnOff();
 		GlStateManager.disableRescaleNormal();
 		GlStateManager.setActiveTexture(OpenGlHelper.lightmapTexUnit);
 		GlStateManager.disableTexture2D();

@@ -1,6 +1,6 @@
 package com.phylogeny.extrabitmanipulation.shape;
 
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
 
 public class Cuboid extends AsymmetricalShape
 {

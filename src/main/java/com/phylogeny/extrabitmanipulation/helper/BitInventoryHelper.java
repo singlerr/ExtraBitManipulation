@@ -23,20 +23,20 @@ import mod.chiselsandbits.api.IBitAccess;
 import mod.chiselsandbits.api.IBitBrush;
 import mod.chiselsandbits.api.IChiselAndBitsAPI;
 import mod.chiselsandbits.api.ItemType;
-import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.core.BlockPos;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagString;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraftforge.items.CapabilityItemHandler;
 import net.minecraftforge.items.IItemHandler;
 
@@ -142,7 +142,7 @@ public class BitInventoryHelper
 	
 	private static boolean areBitStacksEqual(IChiselAndBitsAPI api, ItemStack stackBitType, ItemStack putativeBitStack)
 	{
-		return isBitStack(api, putativeBitStack) && ItemStack.areItemStackTagsEqual(putativeBitStack, stackBitType);
+		return isBitStack(api, putativeBitStack) && ItemStack.tagMatches(putativeBitStack, stackBitType);
 	}
 	
 	public static boolean isBitStack(IChiselAndBitsAPI api, ItemStack putativeBitStack)
@@ -275,7 +275,7 @@ public class BitInventoryHelper
 		return quota;
 	}
 	
-	public static void giveOrDropStacks(EntityPlayer player, World world, BlockPos pos, Shape shape,
+	public static void giveOrDropStacks(EntityPlayer player, Level world, BlockPos pos, Shape shape,
 			IChiselAndBitsAPI api, Map<IBlockState, Integer> bitTypes)
 	{
 		if (bitTypes != null)
@@ -331,7 +331,7 @@ public class BitInventoryHelper
 		}
 	}
 	
-	private static void givePlayerStackOrDropOnGround(EntityPlayer player, World world, IChiselAndBitsAPI api, BlockPos pos, Shape shape, ItemStack stack)
+	private static void givePlayerStackOrDropOnGround(EntityPlayer player, Level world, IChiselAndBitsAPI api, BlockPos pos, Shape shape, ItemStack stack)
 	{
 		if (Configs.placeBitsInInventory)
 		{
@@ -352,9 +352,9 @@ public class BitInventoryHelper
 		}
 	}
 	
-	private static void spawnStacksInShape(World world, BlockPos pos, Shape shape, ItemStack stack)
+	private static void spawnStacksInShape(Level world, BlockPos pos, Shape shape, ItemStack stack)
 	{
-		if (!world.isRemote && world.getGameRules().getBoolean("doTileDrops") && !world.restoringBlockSnapshots)
+		if (!world.isClientSide && world.getGameRules().getBoolean("doTileDrops") && !world.restoringBlockSnapshots)
 		{
 			Vec3d spawnPoint = shape.getRandomInternalPoint(world, pos);
 			EntityItem entityitem = new EntityItem(world, spawnPoint.x, spawnPoint.y - 0.25, spawnPoint.z, stack);
@@ -401,7 +401,7 @@ public class BitInventoryHelper
 		
 		if (!stack.isEmpty() && stack.hasTagCompound())
 		{
-			stackDesign.setTagInfo(ChiselsAndBitsReferences.NBT_KEY_DESIGN_MODE,
+			stackDesign.addTagElement(ChiselsAndBitsReferences.NBT_KEY_DESIGN_MODE,
 					new NBTTagString(ItemStackHelper.getNBT(stack).getString(ChiselsAndBitsReferences.NBT_KEY_DESIGN_MODE)));
 		}
 		player.setHeldItem(EnumHand.MAIN_HAND, stackDesign);

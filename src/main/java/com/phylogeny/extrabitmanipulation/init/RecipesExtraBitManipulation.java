@@ -2,12 +2,12 @@ package com.phylogeny.extrabitmanipulation.init;
 
 import mod.chiselsandbits.core.ChiselsAndBits;
 import mod.chiselsandbits.registry.ModItems;
+import net.minecraft.core.NonNullList;
 import net.minecraft.init.Items;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.crafting.IRecipe;
-import net.minecraft.item.crafting.Ingredient;
-import net.minecraft.util.NonNullList;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.Recipe;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.oredict.OreDictionary;
@@ -24,7 +24,7 @@ public class RecipesExtraBitManipulation
 	}
 	
 	@SubscribeEvent
-	void registerRecipes(RegistryEvent.Register<IRecipe> event)
+	void registerRecipes(RegistryEvent.Register<Recipe> event)
 	{
 		registerChiseledArmorRecipes(event, ItemsExtraBitManipulation.chiseledHelmetDiamond, Items.DIAMOND_HELMET, 272);
 		registerChiseledArmorRecipes(event, ItemsExtraBitManipulation.chiseledChestplateDiamond, Items.DIAMOND_CHESTPLATE, 444);
@@ -36,18 +36,18 @@ public class RecipesExtraBitManipulation
 		registerChiseledArmorRecipes(event, ItemsExtraBitManipulation.chiseledBootsIron, Items.IRON_BOOTS, 272);
 	}
 	
-	private static void registerChiseledArmorRecipes(RegistryEvent.Register<IRecipe> event, Item itemChiseled, Item itemVanilla, int bitCost)
+	private static void registerChiseledArmorRecipes(RegistryEvent.Register<Recipe> event, Item itemChiseled, Item itemVanilla, int bitCost)
 	{
 		registerChiseledArmorRecipe(event, itemChiseled, itemVanilla, bitCost);
 		registerChiseledArmorRecipe(event, itemVanilla, itemChiseled, bitCost);
 	}
 	
-	private static void registerChiseledArmorRecipe(RegistryEvent.Register<IRecipe> event, Item output, Item input, int bitCost)
+	private static void registerChiseledArmorRecipe(RegistryEvent.Register<Recipe> event, Item output, Item input, int bitCost)
 	{
 		ModItems items = ChiselsAndBits.getItems();
 		NonNullList<Ingredient> ingredients = NonNullList.<Ingredient>create();
-		ingredients.add(Ingredient.fromStacks(new ItemStack(input)));
-		ingredients.add(Ingredient.fromStacks(new ItemStack(items.itemChiselStone), new ItemStack(items.itemChiselIron),
+		ingredients.add(Ingredient.of(new ItemStack(input)));
+		ingredients.add(Ingredient.of(new ItemStack(items.itemChiselStone), new ItemStack(items.itemChiselIron),
 				new ItemStack(items.itemChiselGold), new ItemStack(items.itemChiselDiamond)));
 		event.getRegistry().register(new RecipeChiseledArmor(ingredients, output, input, bitCost));
 	}

@@ -4,15 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Nullable;
-
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.StringUtils;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.text.TextFormatting;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
+import net.minecraft.util.StringUtil;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
 import net.minecraftforge.fml.client.config.GuiUtils;
 
@@ -45,7 +44,7 @@ public class GuiListEntryGlOperation<L> extends GuiListEntryChiseledArmor<GlOper
 		@Override
 		public boolean apply(@Nullable String text)
 		{
-			if (StringUtils.isNullOrEmpty(text) || text.equals("-"))
+			if (StringUtil.isNullOrEmpty(text) || text.equals("-"))
 				return true;
 			
 			try
@@ -114,7 +113,7 @@ public class GuiListEntryGlOperation<L> extends GuiListEntryChiseledArmor<GlOper
 	
 	private GuiTextField createDataField(GuiListChiseledArmor<GlOperation> listChiseledArmor, int offsetX, int width, String text)
 	{
-		GuiTextField field = new GuiTextField(6, mc.fontRenderer, listChiseledArmor.left + offsetX, 0, width, 9);
+		GuiTextField field = new GuiTextField(6, mc.font, listChiseledArmor.left + offsetX, 0, width, 9);
 		field.setValidator(numberFilter);
 		field.setEnableBackgroundDrawing(false);
 		field.setTextColor(-1);
@@ -195,7 +194,7 @@ public class GuiListEntryGlOperation<L> extends GuiListEntryChiseledArmor<GlOper
 	@Override
 	public void updateScreen(boolean isSelected)
 	{
-		int y = -MathHelper.clamp(listChiseledArmor.getAmountScrolled(), 0, listChiseledArmor.getMaxScroll())
+		int y = -Mth.clamp(listChiseledArmor.getAmountScrolled(), 0, listChiseledArmor.getMaxScroll())
 				+ listChiseledArmor.slotHeight * index + listChiseledArmor.headerPadding + listChiseledArmor.top + 5;
 		for (GuiTextField field : dataFields)
 		{
@@ -259,7 +258,7 @@ public class GuiListEntryGlOperation<L> extends GuiListEntryChiseledArmor<GlOper
 					inc *= Utility.PIXEL_F;
 			}
 			inc = alterIncrementAmount(inc);
-			buttonPlus.playPressSound(mc.getSoundHandler());
+			buttonPlus.playPressSound(mc.getSoundManager());
 		}
 		for (int i = 0; i < dataFields.size(); i++)
 		{
@@ -310,10 +309,10 @@ public class GuiListEntryGlOperation<L> extends GuiListEntryChiseledArmor<GlOper
 	
 	private float alterIncrementAmount(float inc)
 	{
-		if (Minecraft.IS_RUNNING_ON_MAC ? Keyboard.isKeyDown(Keyboard.KEY_LMETA) : Keyboard.isKeyDown(Keyboard.KEY_LCONTROL))
+		if (Minecraft.ON_OSX ? Keyboard.isKeyDown(Keyboard.KEY_LMETA) : Keyboard.isKeyDown(Keyboard.KEY_LCONTROL))
 			inc *= 0.5F;
 		
-		if (Minecraft.IS_RUNNING_ON_MAC ? Keyboard.isKeyDown(Keyboard.KEY_RMETA) : Keyboard.isKeyDown(Keyboard.KEY_RCONTROL))
+		if (Minecraft.ON_OSX ? Keyboard.isKeyDown(Keyboard.KEY_RMETA) : Keyboard.isKeyDown(Keyboard.KEY_RCONTROL))
 			inc *= 0.1F;
 		
 		if (Keyboard.isKeyDown(Keyboard.KEY_LMENU))
@@ -344,7 +343,7 @@ public class GuiListEntryGlOperation<L> extends GuiListEntryChiseledArmor<GlOper
 				"its contents.\n\nHolding shift affects the base value of the change for the following GL operation fields:\n" +
 				getBaseValueText(GlOperationType.ROTATION, "angle value", "1\u00B0", "90\u00B0") + "\n" +
 				getBaseValueText(GlOperationType.TRANSLATION, "x/y/z values", "1 pixel", "1 meter") + "\n\nHolding the following buttons " +
-				"multiplies the base value by:\n" + TextFormatting.AQUA + "All fields:" + TextFormatting.RESET + "\n" +
+				"multiplies the base value by:\n" + ChatFormatting.AQUA + "All fields:" + ChatFormatting.RESET + "\n" +
 				GuiChiseledArmor.getPointSub("Left Control-click") + " 0.5\n" + GuiChiseledArmor.getPointSub("Left Alt-click") + " 0.25\n" +
 				GuiChiseledArmor.getPointSub("Right Control-click") + " 0.1\n" + GuiChiseledArmor.getPointSub("Right Alt-click") + " 10\n" + 
 				GuiChiseledArmor.getPointSub("Z-click") + " Z-fighting buffer (default = 1/20th pixel)";
@@ -352,7 +351,7 @@ public class GuiListEntryGlOperation<L> extends GuiListEntryChiseledArmor<GlOper
 	
 	private String getBaseValueText(GlOperationType operationType, String fieldType, String click, String shiftClick)
 	{
-		return TextFormatting.AQUA + operationType.getName() + " " + fieldType + ":" + TextFormatting.RESET + "\n" + GuiChiseledArmor.getPointSub("Click") +
+		return ChatFormatting.AQUA + operationType.getName() + " " + fieldType + ":" + ChatFormatting.RESET + "\n" + GuiChiseledArmor.getPointSub("Click") +
 				" " + click + "\n" + GuiChiseledArmor.getPointSub("Shift-click") + " " + shiftClick;
 	}
 	

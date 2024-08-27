@@ -4,11 +4,11 @@ import java.util.List;
 
 import mod.chiselsandbits.api.KeyBindingContext;
 import mod.chiselsandbits.api.ModKeyBinding;
+import net.minecraft.ChatFormatting;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumHand;
-import net.minecraft.util.text.TextFormatting;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.ForgeEventFactory;
 
 import com.phylogeny.extrabitmanipulation.api.ChiselsAndBitsAPIAccess;
@@ -47,7 +47,7 @@ public class ItemBitToolBase extends ItemExtraBitManipulationBase
 		ConfigProperty config = (ConfigProperty) Configs.itemPropertyMap.get(this);
 		if (config.takesDamage)
 		{
-			stack.damageItem(1, player);
+			stack.hurtAndBreak(1, player);
 			if (stack.getItemDamage() > config.maxDamage)
 			{
 				player.renderBrokenItemStack(stack);
@@ -71,15 +71,15 @@ public class ItemBitToolBase extends ItemExtraBitManipulationBase
 	
 	public static String colorSettingText(String text, ConfigBitToolSettingBase setting)
 	{
-		return (setting.isPerTool() ? TextFormatting.GREEN : TextFormatting.BLUE) + text;
+		return (setting.isPerTool() ? ChatFormatting.GREEN : ChatFormatting.BLUE) + text;
 	}
 	
 	public static void addColorInformation(List tooltip, boolean shiftDown)
 	{
 		if (shiftDown)
 		{
-			tooltip.add(TextFormatting.BLUE + "Blue = data stored/accessed per client");
-			tooltip.add(TextFormatting.GREEN + "Green = data stored/accessed per tool");
+			tooltip.add(ChatFormatting.BLUE + "Blue = data stored/accessed per client");
+			tooltip.add(ChatFormatting.GREEN + "Green = data stored/accessed per tool");
 			tooltip.add("");
 		}
 	}
@@ -90,22 +90,22 @@ public class ItemBitToolBase extends ItemExtraBitManipulationBase
 			tooltip.add("Hold SHIFT for settings.");
 		
 		tooltip.add("Hold CONTROL for controls.");
-		tooltip.add(TextFormatting.AQUA + "Use the Chisels & Bits radial");
-		tooltip.add(TextFormatting.AQUA + "    menu key [" + (ChiselsAndBitsAPIAccess.apiInstance == null ? "null"
+		tooltip.add(ChatFormatting.AQUA + "Use the Chisels & Bits radial");
+		tooltip.add(ChatFormatting.AQUA + "    menu key [" + (ChiselsAndBitsAPIAccess.apiInstance == null ? "null"
 				: ChiselsAndBitsAPIAccess.apiInstance.getKeyBinding(ModKeyBinding.MODE_MENU).getDisplayName()) + "] or the");
-		tooltip.add(TextFormatting.AQUA + "    controls listed above");
-		tooltip.add(TextFormatting.AQUA + "    to change tool settings.");
+		tooltip.add(ChatFormatting.AQUA + "    controls listed above");
+		tooltip.add(ChatFormatting.AQUA + "    to change tool settings.");
 	}
 	
 	public static void addKeybindReminders(List<String> tooltip, KeyBindingsExtraBitManipulation... keyBinds)
 	{
 		tooltip.add("");
-		tooltip.add(TextFormatting.DARK_AQUA + ">>Replacable with " + (keyBinds.length > 1 ? "Keybinds" : "a Keybind") + "<<");
+		tooltip.add(ChatFormatting.DARK_AQUA + ">>Replacable with " + (keyBinds.length > 1 ? "Keybinds" : "a Keybind") + "<<");
 	}
 	
 	public static String getColoredKeyBindText(KeyBindingsExtraBitManipulation keyBind)
 	{
-		return TextFormatting.DARK_AQUA + keyBind.getText() + TextFormatting.GRAY;
+		return ChatFormatting.DARK_AQUA + keyBind.getText() + ChatFormatting.GRAY;
 	}
 	
 }

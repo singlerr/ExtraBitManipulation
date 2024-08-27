@@ -23,7 +23,7 @@ import com.phylogeny.extrabitmanipulation.reference.Utility;
 import com.phylogeny.extrabitmanipulation.shape.Shape;
 
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.item.Item;
+import net.minecraft.world.item.Item;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.common.config.Property;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent.OnConfigChangedEvent;

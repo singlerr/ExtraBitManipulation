@@ -21,13 +21,13 @@ public class SlotChiseledArmor extends SlotItemHandler
 	}
 	
 	@Override
-	public boolean getHasStack()
+	public boolean hasItem()
 	{
-		return disabled ? false : super.getHasStack();
+		return disabled ? false : super.hasItem();
 	}
 	
 	@Override
-	public void onSlotChanged()
+	public void setChanged()
 	{
 		((IChiseledArmorSlotsHandler) getItemHandler()).markSlotDirty(index);
 	}

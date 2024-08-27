@@ -1,8 +1,7 @@
 package com.phylogeny.extrabitmanipulation.api.jei.icon;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.ResourceLocation;
-
+import net.minecraft.resources.ResourceLocation;
 import com.phylogeny.extrabitmanipulation.client.ClientHelper;
 import com.phylogeny.extrabitmanipulation.reference.Reference;
 

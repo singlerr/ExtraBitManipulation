@@ -15,8 +15,8 @@ import com.phylogeny.extrabitmanipulation.reference.NBTKeys;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 
 public abstract class PacketChangeChiseledArmorList extends PacketArmorSlotInt

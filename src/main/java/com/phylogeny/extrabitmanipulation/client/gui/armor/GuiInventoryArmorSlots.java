@@ -1,21 +1,19 @@
 package com.phylogeny.extrabitmanipulation.client.gui.armor;
 
 import java.io.IOException;
-
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.InventoryEffectRenderer;
-import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.Slot;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.TextFormatting;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fml.client.config.GuiButtonExt;
 
 import org.lwjgl.input.Keyboard;
-
+import com.mojang.blaze3d.platform.Lighting;
 import com.phylogeny.extrabitmanipulation.ExtraBitManipulation;
 import com.phylogeny.extrabitmanipulation.api.jei.JustEnoughItemsPlugin;
 import com.phylogeny.extrabitmanipulation.api.jei.armor.ChiseledArmorInfoRecipeCategory;
@@ -115,7 +113,7 @@ public class GuiInventoryArmorSlots extends InventoryEffectRenderer
 			if (slot != null && slot.slotNumber > 45)
 			{
 				drawHoveringText("Only Chiseled Armor with items to render can be put in these slots.\n\nArmor warn here will render " +
-						TextFormatting.BLUE + (slot.slotNumber < 50 ? "in place of" : "in addition to") + TextFormatting.WHITE + 
+						ChatFormatting.BLUE + (slot.slotNumber < 50 ? "in place of" : "in addition to") + ChatFormatting.WHITE + 
 						" any normally worn armor, but will not confer any additional protection.", mouseX, mouseY);
 				cancelStackHoverTextRender = true;
 			}
@@ -133,7 +131,7 @@ public class GuiInventoryArmorSlots extends InventoryEffectRenderer
 		GuiInventory.drawEntityOnScreen(guiLeft + 51, guiTop + 75, 30, guiLeft + 51 - oldMouseX, guiTop + 75 - 50 - oldMouseY, mc.player);
 		GlStateManager.pushMatrix();
 		GlStateManager.translate(0, 0, -200);
-		RenderHelper.enableGUIStandardItemLighting();
+		Lighting.enableGUIStandardItemLighting();
 		GlStateManager.enableDepth();
 		IChiseledArmorSlotsHandler cap = ChiseledArmorSlotsHandler.getCapability(mc.player);
 		for (int i = 0; i < ChiseledArmorSlotsHandler.COUNT_SETS; i++)

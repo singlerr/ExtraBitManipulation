@@ -1,8 +1,7 @@
 package com.phylogeny.extrabitmanipulation.shape;
 
-import net.minecraft.util.math.BlockPos;
-
 import com.phylogeny.extrabitmanipulation.reference.Utility;
+import net.minecraft.core.BlockPos;
 
 public class Cube extends SymmetricalShape
 {
