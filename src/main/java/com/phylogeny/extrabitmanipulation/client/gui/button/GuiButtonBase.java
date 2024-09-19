@@ -1,116 +1,108 @@
 package com.phylogeny.extrabitmanipulation.client.gui.button;
 
+import com.phylogeny.extrabitmanipulation.init.SoundsExtraBitManipulation;
+import com.phylogeny.extrabitmanipulation.mixin.accessors.AbstractWidgetAccessor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import javax.annotation.Nullable;
-
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiButton;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.sounds.SoundManager;
+import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvent;
-import com.phylogeny.extrabitmanipulation.init.SoundsExtraBitManipulation;
 
-public class GuiButtonBase extends GuiButton
-{
-	public boolean selected;
-	private boolean silent, helpMode;
-	private List<String> hoverText, hoverTextSelected, hoverHelpText;
-	private SoundEvent soundSelect, soundDeselect;
-	
-	public GuiButtonBase(int buttonId, int x, int y, int width, int height, String text, String hoverText)
-	{
-		this(buttonId, x, y, width, height, text, hoverText, null, null);
-	}
-	
-	public GuiButtonBase(int buttonId, int x, int y, int widthIn, int heightIn, String text,
-			String hoverText, @Nullable SoundEvent soundSelect, @Nullable SoundEvent soundDeselect)
-	{
-		super(buttonId, x, y, widthIn, heightIn, text);
-		this.hoverText = hoverTextSelected = removeEmptyLines(Collections.singletonList(hoverText));
-		this.soundSelect = soundSelect;
-		this.soundDeselect = soundDeselect;
-	}
-	
-	public void setSilent(boolean silent)
-	{
-		this.silent = silent;
-	}
-	
-	@Override
-	public void playPressSound(SoundManager soundHandler)
-	{
-		if (silent)
-			return;
-		
-		if (soundSelect != null)
-		{
-			SoundsExtraBitManipulation.playSound(selected ? soundDeselect : soundSelect);
-			return;
-		}
-		super.playPressSound(soundHandler);
-	}
-	
-	@Override
-	public void drawButton(Minecraft mc, int mouseX, int mouseY, float partialTicks)
-	{
-		hovered = mouseX >= x && mouseY >= y && mouseX < x + width && mouseY < y + height;
-		mouseDragged(mc, mouseX, mouseY);
-	}
-	
-	public List<String> getHoverText()
-	{
-		return helpMode ? hoverHelpText : (selected ? hoverTextSelected : hoverText);
-	}
-	
-	private List<String> removeEmptyLines(List<String> lines)
-	{
-		List<String> linesNew = new ArrayList<>();
-		for (String line : lines)
-		{
-			if (!line.isEmpty())
-				linesNew.add(line);
-		}
-		return linesNew;
-	}
-	
-	private List<String> textToLines(String[] text)
-	{
-		return removeEmptyLines(Arrays.<String>asList(text));
-	}
-	
-	public void setHoverText(String... text)
-	{
-		hoverText = textToLines(text);
-	}
-	
-	public void setHoverTextSelected(String... text)
-	{
-		hoverTextSelected = textToLines(text);
-	}
-	
-	public void setHoverHelpText(String... text)
-	{
-		hoverHelpText = textToLines(text);
-	}
-	
-	public void setHelpMode(boolean helpMode)
-	{
-		this.helpMode = helpMode;
-	}
-	
-	public GuiButtonBase setSoundSelect(SoundEvent sound)
-	{
-		soundSelect = sound;
-		return this;
-	}
-	
-	public GuiButtonBase setSoundDeselect(SoundEvent sound)
-	{
-		soundDeselect = sound;
-		return this;
-	}
-	
+public class GuiButtonBase extends Button {
+  public boolean selected;
+  private boolean silent, helpMode;
+  private List<Component> hoverText, hoverTextSelected, hoverHelpText;
+  private SoundEvent soundSelect, soundDeselect;
+
+  public GuiButtonBase(int x, int y, int width, int height, Component text,
+                       Component hoverText, OnPress onPress, CreateNarration narration) {
+    this(x, y, width, height, text, hoverText, null, null, onPress, narration);
+  }
+
+  public GuiButtonBase(int x, int y, int widthIn, int heightIn, Component text,
+                       Component hoverText, @Nullable SoundEvent soundSelect,
+                       @Nullable SoundEvent soundDeselect, OnPress onPress,
+                       CreateNarration narration) {
+    super(x, y, widthIn, heightIn, text, onPress, narration);
+    this.hoverText = hoverTextSelected = removeEmptyLines(Collections.singletonList(hoverText));
+    this.soundSelect = soundSelect;
+    this.soundDeselect = soundDeselect;
+  }
+
+  public void setSilent(boolean silent) {
+    this.silent = silent;
+  }
+
+  @Override
+  public void playDownSound(SoundManager soundManager) {
+    if (silent) {
+      return;
+    }
+
+    if (soundSelect != null) {
+      SoundsExtraBitManipulation.playSound(selected ? soundDeselect : soundSelect);
+      return;
+    }
+    super.playDownSound(soundManager);
+
+  }
+
+  @Override
+  protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+    isHovered = mouseX >= ((AbstractWidgetAccessor) this).getX() &&
+        mouseY >= ((AbstractWidgetAccessor) this).getY() &&
+        mouseX < ((AbstractWidgetAccessor) this).getX() + width &&
+        mouseY < ((AbstractWidgetAccessor) this).getY() + height;
+    mouseMoved(mouseX, mouseY);
+  }
+
+  public List<Component> getHoverText() {
+    return helpMode ? hoverHelpText : (selected ? hoverTextSelected : hoverText);
+  }
+
+  private List<Component> removeEmptyLines(List<Component> lines) {
+    List<Component> linesNew = new ArrayList<>();
+    for (Component line : lines) {
+      if (!line.getString().isEmpty()) {
+        linesNew.add(line);
+      }
+    }
+    return linesNew;
+  }
+
+  private List<Component> textToLines(Component[] text) {
+    return removeEmptyLines(Arrays.asList(text));
+  }
+
+  public void setHoverText(Component... text) {
+    hoverText = textToLines(text);
+  }
+
+  public void setHoverTextSelected(Component... text) {
+    hoverTextSelected = textToLines(text);
+  }
+
+  public void setHoverHelpText(Component... text) {
+    hoverHelpText = textToLines(text);
+  }
+
+  public void setHelpMode(boolean helpMode) {
+    this.helpMode = helpMode;
+  }
+
+  public GuiButtonBase setSoundSelect(SoundEvent sound) {
+    soundSelect = sound;
+    return this;
+  }
+
+  public GuiButtonBase setSoundDeselect(SoundEvent sound) {
+    soundDeselect = sound;
+    return this;
+  }
+
 }

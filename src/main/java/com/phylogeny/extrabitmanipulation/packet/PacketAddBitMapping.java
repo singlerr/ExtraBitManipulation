@@ -1,103 +1,96 @@
 package com.phylogeny.extrabitmanipulation.packet;
 
-import io.netty.buffer.ByteBuf;
-
-import java.util.Map;
-
-import mod.chiselsandbits.api.APIExceptions.InvalidBitItem;
-import mod.chiselsandbits.api.IBitBrush;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.IThreadListener;
-import net.minecraft.world.WorldServer;
-import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.fml.common.network.ByteBufUtils;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
-
 import com.phylogeny.extrabitmanipulation.api.ChiselsAndBitsAPIAccess;
 import com.phylogeny.extrabitmanipulation.helper.BitIOHelper;
 import com.phylogeny.extrabitmanipulation.helper.ItemStackHelper;
+import com.phylogeny.extrabitmanipulation.reference.Reference;
+import java.util.Map;
+import mod.chiselsandbits.api.APIExceptions.InvalidBitItem;
+import mod.chiselsandbits.api.IBitBrush;
+import net.fabricmc.fabric.api.networking.v1.PacketSender;
+import net.fabricmc.fabric.api.networking.v1.PacketType;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
 
-public class PacketAddBitMapping extends PacketBitMapIO
-{
-	private IBlockState state;
-	private IBitBrush bit;
-	
-	public PacketAddBitMapping() {}
-	
-	public PacketAddBitMapping(String nbtKey, IBlockState state, IBitBrush bit, boolean saveStatesById)
-	{
-		super(nbtKey, saveStatesById);
-		this.state = state;
-		this.bit = bit;
-	}
-	
-	@Override
-	public void toBytes(ByteBuf buffer)
-	{
-		super.toBytes(buffer);
-		BitIOHelper.stateToBytes(buffer, state);
-		boolean removeMapping = bit == null;
-		buffer.writeBoolean(removeMapping);
-		if (!removeMapping)
-			ByteBufUtils.writeItemStack(buffer, bit.getItemStack(1));
-	}
-	
-	@Override
-	public void fromBytes(ByteBuf buffer)
-	{
-		super.fromBytes(buffer);
-		state = BitIOHelper.stateFromBytes(buffer);
-		if (buffer.readBoolean())
-		{
-			bit = null;
-			return;
-		}
-		try
-		{
-			bit = ChiselsAndBitsAPIAccess.apiInstance.createBrush(ByteBufUtils.readItemStack(buffer));
-		}
-		catch (InvalidBitItem e)
-		{
-			bit = null;
-		}
-	}
-	
-	public static class Handler implements IMessageHandler<PacketAddBitMapping, IMessage>
-	{
-		@Override
-		public IMessage onMessage(final PacketAddBitMapping message, final MessageContext ctx)
-		{
-			IThreadListener mainThread = (WorldServer) ctx.getServerHandler().player.world;
-			mainThread.addScheduledTask(new Runnable()
-			{
-				@Override
-				public void run()
-				{
-					EntityPlayer player = ctx.getServerHandler().player;
-					ItemStack stack = player.getHeldItemMainhand();
-					if (ItemStackHelper.isModelingToolStack(stack))
-					{
-						Map<IBlockState, IBitBrush> bitMapPermanent = BitIOHelper.readStateToBitMapFromNBT(ChiselsAndBitsAPIAccess.apiInstance,
-								stack, message.nbtKey);
-						if (message.bit != null)
-						{
-							bitMapPermanent.put(message.state, message.bit);
-						}
-						else
-						{
-							bitMapPermanent.remove(message.state);
-						}
-						BitIOHelper.writeStateToBitMapToNBT(stack, message.nbtKey, bitMapPermanent, message.saveStatesById);
-						player.inventoryContainer.detectAndSendChanges();
-					}
-				}
-			});
-			return null;
-		}
-		
-	}
-	
+public class PacketAddBitMapping extends PacketBitMapIO {
+
+  public static final PacketType<PacketAddBitMapping> PACKET_TYPE =
+      PacketType.create(new ResourceLocation(
+          Reference.MOD_ID, "add_bit_mapping"), PacketAddBitMapping::new);
+
+  private BlockState state;
+  private IBitBrush bit;
+
+  public PacketAddBitMapping(FriendlyByteBuf buf) {
+    super(buf);
+
+    state = BitIOHelper.stateFromBytes(buf);
+    if (buf.readBoolean()) {
+      bit = null;
+      return;
+    }
+    try {
+      bit = ChiselsAndBitsAPIAccess.apiInstance.createBrush(buf.readItem());
+    } catch (InvalidBitItem e) {
+      bit = null;
+    }
+  }
+
+  public PacketAddBitMapping(String nbtKey, BlockState state, IBitBrush bit,
+                             boolean saveStatesById) {
+    super(nbtKey, saveStatesById);
+    this.state = state;
+    this.bit = bit;
+  }
+
+  @Override
+  public void write(FriendlyByteBuf buf) {
+    super.write(buf);
+    BitIOHelper.stateToBytes(buf, state);
+    boolean removeMapping = bit == null;
+    buf.writeBoolean(removeMapping);
+    if (!removeMapping) {
+      buf.writeItem(bit.getItemStack(1));
+    }
+  }
+
+  @Override
+  public PacketType<?> getType() {
+    return PACKET_TYPE;
+  }
+
+  public static class Handler
+      implements ServerPlayNetworking.PlayPacketHandler<PacketAddBitMapping> {
+    @Override
+    public void receive(PacketAddBitMapping packet, ServerPlayer player,
+                        PacketSender responseSender) {
+
+      MinecraftServer server = player.level().getServer();
+      server.execute(new Runnable() {
+        @Override
+        public void run() {
+          ItemStack stack = player.getMainHandItem();
+          if (ItemStackHelper.isModelingToolStack(stack)) {
+            Map<BlockState, IBitBrush> bitMapPermanent =
+                BitIOHelper.readStateToBitMapFromNBT(ChiselsAndBitsAPIAccess.apiInstance,
+                    stack, packet.nbtKey);
+            if (packet.bit != null) {
+              bitMapPermanent.put(packet.state, packet.bit);
+            } else {
+              bitMapPermanent.remove(packet.state);
+            }
+            BitIOHelper.writeStateToBitMapToNBT(stack, packet.nbtKey, bitMapPermanent,
+                packet.saveStatesById);
+            player.inventoryMenu.sendAllDataToRemote();
+          }
+        }
+      });
+    }
+  }
+
 }

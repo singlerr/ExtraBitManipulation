@@ -1,59 +1,53 @@
 package com.phylogeny.extrabitmanipulation.container;
 
-import javax.annotation.Nullable;
-
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.inventory.Container;
-import net.minecraft.inventory.Slot;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
-public class ContainerPlayerInventory extends Container
-{
-	
-	public ContainerPlayerInventory(EntityPlayer player, int startX, int startY)
-	{
-		for (int i1 = 0; i1 < 9; ++i1)
-		{
-			addSlotToContainer(new Slot(player.inventory, i1, startX + i1 * 18, startY + 58));
-		}
-		for (int k = 0; k < 3; ++k)
-		{
-			for (int l = 0; l < 9; ++l)
-				addSlotToContainer(new Slot(player.inventory, l + k * 9 + 9, startX + l * 18, startY + k * 18));
-		}
-	}
-	
-	@Override
-	public boolean canInteractWith(EntityPlayer playerIn)
-	{
-		return true;
-	}
-	
-	@Override
-	@Nullable
-	public ItemStack transferStackInSlot(EntityPlayer player, int index)
-	{
-		ItemStack stack = ItemStack.EMPTY;
-		Slot slot = inventorySlots.get(index);
-		if (slot != null && slot.getHasStack())
-		{
-			ItemStack stack2 = slot.getStack();
-			stack = stack2.copy();
-			if (index < 9)
-			{
-				if (!mergeItemStack(stack2, 9, 36, false))
-					return ItemStack.EMPTY;
-			}
-			else if (!mergeItemStack(stack2, 0, 9, true))
-			{
-				return ItemStack.EMPTY;
-			}
-			if (stack2.isEmpty())
-				slot.putStack(ItemStack.EMPTY);
-			else
-				slot.onSlotChanged();
-		}
-		return stack;
-	}
-	
+public class ContainerPlayerInventory extends AbstractContainerMenu {
+
+  public ContainerPlayerInventory(Player player, int startX, int startY) {
+    super(MenuType.GENERIC_9x5, 0);
+    for (int i1 = 0; i1 < 9; ++i1) {
+      addSlot(new Slot(player.getInventory(), i1, startX + i1 * 18, startY + 58));
+    }
+    for (int k = 0; k < 3; ++k) {
+      for (int l = 0; l < 9; ++l) {
+        addSlot(
+            new Slot(player.getInventory(), l + k * 9 + 9, startX + l * 18, startY + k * 18));
+      }
+    }
+  }
+
+  @Override
+  public ItemStack quickMoveStack(Player player, int index) {
+    ItemStack stack = ItemStack.EMPTY;
+    Slot slot = slots.get(index);
+    if (slot != null && slot.hasItem()) {
+      ItemStack stack2 = slot.getItem();
+      stack = stack2.copy();
+      if (index < 9) {
+        if (!moveItemStackTo(stack2, 9, 36, false)) {
+          return ItemStack.EMPTY;
+        }
+      } else if (!moveItemStackTo(stack2, 0, 9, true)) {
+        return ItemStack.EMPTY;
+      }
+      if (stack2.isEmpty()) {
+        slot.set(ItemStack.EMPTY);
+      } else {
+        slot.setChanged();
+      }
+    }
+    return stack;
+
+  }
+
+  @Override
+  public boolean stillValid(Player player) {
+    return true;
+  }
+
 }

@@ -1,0 +1,22 @@
+{
+  "required": true,
+  "package": "com.phylogeny.extrabitmanipulation.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "accessors.InventoryScreenAccessor",
+    "accessors.MinecraftAccessor",
+    "accessors.ServerLevelAccessor",
+    "accessors.SlotAccessor",
+    "mixin.ModelPartMixin",
+    "mixin.PlayerMixin"
+  ],
+  "client": [
+    "accessors.KeyMappingAccessor",
+    "mixin.MinecraftMixin",
+    "mixin.MouseHandlerMixin",
+    "mixin.TextureAtlasMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

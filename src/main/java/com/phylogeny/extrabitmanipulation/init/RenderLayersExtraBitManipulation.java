@@ -1,8 +1,11 @@
 package com.phylogeny.extrabitmanipulation.init;
 
+import com.phylogeny.extrabitmanipulation.armor.ChiseledArmorStackHandeler;
+import com.phylogeny.extrabitmanipulation.armor.LayerChiseledArmor;
+import com.phylogeny.extrabitmanipulation.client.ClientHelper;
+import com.phylogeny.extrabitmanipulation.reference.CustomNPCsReferences;
 import java.util.ArrayList;
 import java.util.List;
-
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderLivingBase;
 import net.minecraft.client.renderer.entity.RenderPlayer;
@@ -29,83 +32,79 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import noppes.npcs.entity.EntityCustomNpc;
 import noppes.npcs.entity.EntityNPC64x32;
 
-import com.phylogeny.extrabitmanipulation.armor.ChiseledArmorStackHandeler;
-import com.phylogeny.extrabitmanipulation.armor.LayerChiseledArmor;
-import com.phylogeny.extrabitmanipulation.client.ClientHelper;
-import com.phylogeny.extrabitmanipulation.reference.CustomNPCsReferences;
+public class RenderLayersExtraBitManipulation {
+  private static final List<LayerChiseledArmor> armorLayers = new ArrayList<LayerChiseledArmor>();
+  private static final List<LayerChiseledArmor> armorLayersMob =
+      new ArrayList<LayerChiseledArmor>();
+  private static final List<LayerChiseledArmor> armorLayersPlayer =
+      new ArrayList<LayerChiseledArmor>();
+  private static boolean layersInitializedPlayerCNPC;
 
-public class RenderLayersExtraBitManipulation
-{
-	private static List<LayerChiseledArmor> armorLayers = new ArrayList<LayerChiseledArmor>();
-	private static List<LayerChiseledArmor> armorLayersMob = new ArrayList<LayerChiseledArmor>();
-	private static List<LayerChiseledArmor> armorLayersPlayer = new ArrayList<LayerChiseledArmor>();
-	private static boolean layersInitializedPlayerCNPC;
-	
-	public static void initLayers()
-	{
-		addLayerChiseledArmorToEntityRender(EntityArmorStand.class);
-		addLayerChiseledArmorToEntityRender(EntityVillager.class);
-		addLayerChiseledArmorToEntityRender(EntityZombieVillager.class);
-		addLayerChiseledArmorToEntityRender(EntityZombie.class);
-		addLayerChiseledArmorToEntityRender(EntityGiantZombie.class);
-		addLayerChiseledArmorToEntityRender(EntityPigZombie.class);
-		addLayerChiseledArmorToEntityRender(EntitySkeleton.class);
-		addLayerChiseledArmorToEntityRender(EntityWitherSkeleton.class);
-		addLayerChiseledArmorToEntityRender(EntityHusk.class);
-		addLayerChiseledArmorToEntityRender(EntityStray.class);
-		addLayerChiseledArmorToEntityRender(EntityVex.class);
-		addLayerChiseledArmorToEntityRender(EntityVindicator.class);
-		addLayerChiseledArmorToEntityRender(EntityEvoker.class);
-		addLayerChiseledArmorToEntityRender(EntityIllusionIllager.class);
-		armorLayers.addAll(armorLayersMob);
-		for (RenderPlayer renderPlayer : ClientHelper.getRenderManager().getSkinMap().values())
-		{
-			LayerChiseledArmor layer = new LayerChiseledArmor(renderPlayer);
-			renderPlayer.addLayer(layer);
-			armorLayersPlayer.add(layer);
-		}
-		armorLayers.addAll(armorLayersPlayer);
-		if (CustomNPCsReferences.isLoaded)
-			MinecraftForge.EVENT_BUS.register(new RenderLayersExtraBitManipulation());
-	}
-	
-	@SubscribeEvent
-	public void initLayersCNPCs(@SuppressWarnings("unused") RenderLivingEvent.Pre<EntityCustomNpc> event)
-	{
-		if (layersInitializedPlayerCNPC)
-			return;
-		
-		addLayerChiseledArmorToEntityRender(EntityCustomNpc.class);
-		addLayerChiseledArmorToEntityRender(EntityNPC64x32.class);
-		layersInitializedPlayerCNPC = true;
-	}
-	
-	private static <T extends EntityLivingBase> void addLayerChiseledArmorToEntityRender(Class <? extends Entity > entityClass)
-	{
-		Render<T> renderer = ClientHelper.getRenderManager().getEntityClassRenderObject(entityClass);
-		LayerChiseledArmor layer = new LayerChiseledArmor((RenderLivingBase<T>) renderer);
-		((RenderLivingBase<T>) renderer).addLayer(layer);
-		armorLayersMob.add(layer);
-	}
-	
-	public static void clearRenderMaps()
-	{
-		ChiseledArmorStackHandeler.clearModelMap();
-		for (LayerChiseledArmor layer : armorLayers)
-			layer.clearDisplayListsMap();
-	}
-	
-	public static void removeFromRenderMaps(NBTTagCompound nbt)
-	{
-		ChiseledArmorStackHandeler.removeFromModelMap(nbt);
-		for (LayerChiseledArmor layer : armorLayers)
-			layer.removeFromDisplayListsMap(nbt);
-	}
-	
-	public static void forceUpdateModels(boolean isPlayerModel)
-	{
-		for (LayerChiseledArmor layer : isPlayerModel ? armorLayersPlayer : armorLayersMob)
-			layer.updateModelAndRenderers(true);
-	}
-	
+  public static void initLayers() {
+    addLayerChiseledArmorToEntityRender(EntityArmorStand.class);
+    addLayerChiseledArmorToEntityRender(EntityVillager.class);
+    addLayerChiseledArmorToEntityRender(EntityZombieVillager.class);
+    addLayerChiseledArmorToEntityRender(EntityZombie.class);
+    addLayerChiseledArmorToEntityRender(EntityGiantZombie.class);
+    addLayerChiseledArmorToEntityRender(EntityPigZombie.class);
+    addLayerChiseledArmorToEntityRender(EntitySkeleton.class);
+    addLayerChiseledArmorToEntityRender(EntityWitherSkeleton.class);
+    addLayerChiseledArmorToEntityRender(EntityHusk.class);
+    addLayerChiseledArmorToEntityRender(EntityStray.class);
+    addLayerChiseledArmorToEntityRender(EntityVex.class);
+    addLayerChiseledArmorToEntityRender(EntityVindicator.class);
+    addLayerChiseledArmorToEntityRender(EntityEvoker.class);
+    addLayerChiseledArmorToEntityRender(EntityIllusionIllager.class);
+    armorLayers.addAll(armorLayersMob);
+    for (RenderPlayer renderPlayer : ClientHelper.getRenderManager().getSkinMap().values()) {
+      LayerChiseledArmor layer = new LayerChiseledArmor(renderPlayer);
+      renderPlayer.addLayer(layer);
+      armorLayersPlayer.add(layer);
+    }
+    armorLayers.addAll(armorLayersPlayer);
+    if (CustomNPCsReferences.isLoaded) {
+      MinecraftForge.EVENT_BUS.register(new RenderLayersExtraBitManipulation());
+    }
+  }
+
+  @SubscribeEvent
+  public void initLayersCNPCs(
+      @SuppressWarnings("unused") RenderLivingEvent.Pre<EntityCustomNpc> event) {
+    if (layersInitializedPlayerCNPC) {
+      return;
+    }
+
+    addLayerChiseledArmorToEntityRender(EntityCustomNpc.class);
+    addLayerChiseledArmorToEntityRender(EntityNPC64x32.class);
+    layersInitializedPlayerCNPC = true;
+  }
+
+  private static <T extends EntityLivingBase> void addLayerChiseledArmorToEntityRender(
+      Class<? extends Entity> entityClass) {
+    Render<T> renderer = ClientHelper.getRenderManager().getEntityClassRenderObject(entityClass);
+    LayerChiseledArmor layer = new LayerChiseledArmor((RenderLivingBase<T>) renderer);
+    ((RenderLivingBase<T>) renderer).addLayer(layer);
+    armorLayersMob.add(layer);
+  }
+
+  public static void clearRenderMaps() {
+    ChiseledArmorStackHandeler.clearModelMap();
+    for (LayerChiseledArmor layer : armorLayers) {
+      layer.clearDisplayListsMap();
+    }
+  }
+
+  public static void removeFromRenderMaps(NBTTagCompound nbt) {
+    ChiseledArmorStackHandeler.removeFromModelMap(nbt);
+    for (LayerChiseledArmor layer : armorLayers) {
+      layer.removeFromDisplayListsMap(nbt);
+    }
+  }
+
+  public static void forceUpdateModels(boolean isPlayerModel) {
+    for (LayerChiseledArmor layer : isPlayerModel ? armorLayersPlayer : armorLayersMob) {
+      layer.updateModelAndRenderers(true);
+    }
+  }
+
 }

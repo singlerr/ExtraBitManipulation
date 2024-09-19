@@ -1,5 +1,8 @@
 package com.phylogeny.extrabitmanipulation.packet;
 
+import com.phylogeny.extrabitmanipulation.helper.BitToolSettingsHelper.ArmorBodyPartTemplateData;
+import com.phylogeny.extrabitmanipulation.helper.ItemStackHelper;
+import com.phylogeny.extrabitmanipulation.item.ItemChiseledArmor;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.core.BlockPos;
 import net.minecraft.entity.player.EntityPlayer;
@@ -12,56 +15,49 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
-import com.phylogeny.extrabitmanipulation.helper.BitToolSettingsHelper.ArmorBodyPartTemplateData;
-import com.phylogeny.extrabitmanipulation.helper.ItemStackHelper;
-import com.phylogeny.extrabitmanipulation.item.ItemChiseledArmor;
+public class PacketCreateBodyPartTemplate extends PacketBlockInteraction implements IMessage {
+  private ArmorBodyPartTemplateData templateData = new ArmorBodyPartTemplateData();
 
-public class PacketCreateBodyPartTemplate extends PacketBlockInteraction implements IMessage
-{
-	private ArmorBodyPartTemplateData templateData = new ArmorBodyPartTemplateData();
-	
-	public PacketCreateBodyPartTemplate() {}
-	
-	public PacketCreateBodyPartTemplate(BlockPos pos, EnumFacing side, Vec3d hit, ArmorBodyPartTemplateData templateData)
-	{
-		super(pos, side, hit);
-		this.templateData = templateData;
-	}
-	
-	@Override
-	public void toBytes(ByteBuf buffer)
-	{
-		super.toBytes(buffer);
-		templateData.toBytes(buffer);
-	}
-	
-	@Override
-	public void fromBytes(ByteBuf buffer)
-	{
-		super.fromBytes(buffer);
-		templateData.fromBytes(buffer);
-	}
-	
-	public static class Handler implements IMessageHandler<PacketCreateBodyPartTemplate, IMessage>
-	{
-		@Override
-		public IMessage onMessage(final PacketCreateBodyPartTemplate message, final MessageContext ctx)
-		{
-			IThreadListener mainThread = (WorldServer) ctx.getServerHandler().player.world;
-			mainThread.addScheduledTask(new Runnable()
-			{
-				@Override
-				public void run()
-				{
-					EntityPlayer player = ctx.getServerHandler().player;
-					ItemStack stack = player.getHeldItemMainhand();
-					if (ItemStackHelper.isChiseledArmorStack(stack))
-						ItemChiseledArmor.createBodyPartTemplate(player, player.world, message.pos, message.side, message.hit, message.templateData);
-				}
-			});
-			return null;
-		}
-		
-	}
-	
+  public PacketCreateBodyPartTemplate() {
+  }
+
+  public PacketCreateBodyPartTemplate(BlockPos pos, EnumFacing side, Vec3d hit,
+                                      ArmorBodyPartTemplateData templateData) {
+    super(pos, side, hit);
+    this.templateData = templateData;
+  }
+
+  @Override
+  public void toBytes(ByteBuf buffer) {
+    super.toBytes(buffer);
+    templateData.toBytes(buffer);
+  }
+
+  @Override
+  public void fromBytes(ByteBuf buffer) {
+    super.fromBytes(buffer);
+    templateData.fromBytes(buffer);
+  }
+
+  public static class Handler implements IMessageHandler<PacketCreateBodyPartTemplate, IMessage> {
+    @Override
+    public IMessage onMessage(final PacketCreateBodyPartTemplate message,
+                              final MessageContext ctx) {
+      IThreadListener mainThread = (WorldServer) ctx.getServerHandler().player.world;
+      mainThread.addScheduledTask(new Runnable() {
+        @Override
+        public void run() {
+          EntityPlayer player = ctx.getServerHandler().player;
+          ItemStack stack = player.getHeldItemMainhand();
+          if (ItemStackHelper.isChiseledArmorStack(stack)) {
+            ItemChiseledArmor.createBodyPartTemplate(player, player.world, message.pos,
+                message.side, message.hit, message.templateData);
+          }
+        }
+      });
+      return null;
+    }
+
+  }
+
 }

@@ -1,71 +1,71 @@
 package com.phylogeny.extrabitmanipulation.packet;
 
-import io.netty.buffer.ByteBuf;
-
-import java.util.Map;
-
-import mod.chiselsandbits.api.IBitBrush;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.IThreadListener;
-import net.minecraft.world.WorldServer;
-import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
-
 import com.phylogeny.extrabitmanipulation.helper.BitIOHelper;
 import com.phylogeny.extrabitmanipulation.helper.ItemStackHelper;
+import com.phylogeny.extrabitmanipulation.reference.Reference;
+import java.util.Map;
+import mod.chiselsandbits.api.IBitBrush;
+import net.fabricmc.fabric.api.networking.v1.PacketSender;
+import net.fabricmc.fabric.api.networking.v1.PacketType;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.state.BlockState;
 
-public class PacketOverwriteStackBitMappings extends PacketBitMapIO
-{
-	private Map<IBlockState, IBitBrush> bitMap;
-	
-	public PacketOverwriteStackBitMappings() {}
-	
-	public PacketOverwriteStackBitMappings(Map<IBlockState, IBitBrush> bitMap, String nbtKey, boolean saveStatesById)
-	{
-		super(nbtKey, saveStatesById);
-		this.bitMap = bitMap;
-	}
-	
-	@Override
-	public void toBytes(ByteBuf buffer)
-	{
-		super.toBytes(buffer);
-		BitIOHelper.stateToBitMapToBytes(buffer, bitMap);
-	}
-	
-	@Override
-	public void fromBytes(ByteBuf buffer)
-	{
-		super.fromBytes(buffer);
-		bitMap = BitIOHelper.stateToBitMapFromBytes(buffer);
-	}
-	
-	public static class Handler implements IMessageHandler<PacketOverwriteStackBitMappings, IMessage>
-	{
-		@Override
-		public IMessage onMessage(final PacketOverwriteStackBitMappings message, final MessageContext ctx)
-		{
-			IThreadListener mainThread = (WorldServer) ctx.getServerHandler().player.world;
-			mainThread.addScheduledTask(new Runnable()
-			{
-				@Override
-				public void run()
-				{
-					EntityPlayer player = ctx.getServerHandler().player;
-					ItemStack stack = player.getHeldItemMainhand();
-					if (ItemStackHelper.isModelingToolStack(stack))
-					{
-						BitIOHelper.writeStateToBitMapToNBT(stack, message.nbtKey, message.bitMap, message.saveStatesById);
-						player.inventoryContainer.detectAndSendChanges();
-					}
-				}
-			});
-			return null;
-		}
-		
-	}
-	
+public class PacketOverwriteStackBitMappings extends PacketBitMapIO {
+
+  public static final PacketType<PacketOverwriteStackBitMappings> PACKET_TYPE =
+      PacketType.create(new ResourceLocation(
+          Reference.MOD_ID, "overwrite_stack_bit_mappings"), PacketOverwriteStackBitMappings::new);
+
+  private Map<BlockState, IBitBrush> bitMap;
+
+  public PacketOverwriteStackBitMappings(FriendlyByteBuf buf) {
+    super(buf);
+    bitMap = BitIOHelper.stateToBitMapFromBytes(buf);
+  }
+
+  public PacketOverwriteStackBitMappings(Map<BlockState, IBitBrush> bitMap, String nbtKey,
+                                         boolean saveStatesById) {
+    super(nbtKey, saveStatesById);
+    this.bitMap = bitMap;
+  }
+
+  @Override
+  public void write(FriendlyByteBuf buf) {
+    super.write(buf);
+    BitIOHelper.stateToBitMapToBytes(buf, bitMap);
+  }
+
+  @Override
+  public PacketType<?> getType() {
+    return PACKET_TYPE;
+  }
+
+  public static class Handler
+      implements ServerPlayNetworking.PlayPacketHandler<PacketOverwriteStackBitMappings> {
+
+
+    @Override
+    public void receive(PacketOverwriteStackBitMappings packet, ServerPlayer player,
+                        PacketSender responseSender) {
+      MinecraftServer mainThread = player.level().getServer();
+      mainThread.execute(new Runnable() {
+        @Override
+        public void run() {
+          ItemStack stack = player.getMainHandItem();
+          if (ItemStackHelper.isModelingToolStack(stack)) {
+            BitIOHelper.writeStateToBitMapToNBT(stack, packet.nbtKey, packet.bitMap,
+                packet.saveStatesById);
+            player.inventoryMenu.sendAllDataToRemote();
+          }
+        }
+      });
+
+    }
+  }
+
 }

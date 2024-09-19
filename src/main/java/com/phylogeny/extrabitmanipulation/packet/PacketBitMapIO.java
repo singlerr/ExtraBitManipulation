@@ -1,34 +1,25 @@
 package com.phylogeny.extrabitmanipulation.packet;
 
-import io.netty.buffer.ByteBuf;
-import net.minecraftforge.fml.common.network.ByteBufUtils;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.fabricmc.fabric.api.networking.v1.FabricPacket;
+import net.minecraft.network.FriendlyByteBuf;
 
-public abstract class PacketBitMapIO implements IMessage
-{
-	protected String nbtKey;
-	protected boolean saveStatesById;
-	
-	public PacketBitMapIO() {}
-	
-	public PacketBitMapIO(String nbtKey, boolean saveStatesById)
-	{
-		this.nbtKey = nbtKey;
-		this.saveStatesById = saveStatesById;
-	}
-	
-	@Override
-	public void toBytes(ByteBuf buffer)
-	{
-		ByteBufUtils.writeUTF8String(buffer, nbtKey);
-		buffer.writeBoolean(saveStatesById);
-	}
-	
-	@Override
-	public void fromBytes(ByteBuf buffer)
-	{
-		nbtKey = ByteBufUtils.readUTF8String(buffer);
-		saveStatesById = buffer.readBoolean();
-	}
-	
+public abstract class PacketBitMapIO implements FabricPacket {
+  protected String nbtKey;
+  protected boolean saveStatesById;
+
+  public PacketBitMapIO(FriendlyByteBuf buf) {
+    nbtKey = buf.readUtf();
+    saveStatesById = buf.readBoolean();
+  }
+
+  public PacketBitMapIO(String nbtKey, boolean saveStatesById) {
+    this.nbtKey = nbtKey;
+    this.saveStatesById = saveStatesById;
+  }
+
+  @Override
+  public void write(FriendlyByteBuf buf) {
+    buf.writeUtf(nbtKey);
+    buf.writeBoolean(saveStatesById);
+  }
 }

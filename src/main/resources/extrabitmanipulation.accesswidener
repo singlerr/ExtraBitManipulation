@@ -1,0 +1,6 @@
+accessWidener v2 named
+mutable field net/minecraft/world/inventory/Slot x I
+mutable field net/minecraft/world/inventory/Slot y I
+mutable field net/minecraft/world/inventory/Slot slot I
+extendable class net/minecraft/client/model/geom/ModelPart
+accessible method net/minecraft/client/particle/SplashParticle <init> (Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDD)V
