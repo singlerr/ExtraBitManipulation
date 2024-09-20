@@ -12,7 +12,6 @@
     "sources": "https://github.com/singlerr"
   },
   "license": "All rights reserved",
-  "icon": "assets/chiselsandbits/icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [
@@ -23,7 +22,7 @@
     ]
   },
   "mixins": [
-    "chiselsandbits.mixins.json"
+    "extrabitmanipulation.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.15.1",

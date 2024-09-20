@@ -1,34 +1,47 @@
 package com.phylogeny.extrabitmanipulation.packet;
 
 import com.phylogeny.extrabitmanipulation.helper.BitToolSettingsHelper;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.IThreadListener;
-import net.minecraft.world.WorldServer;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import com.phylogeny.extrabitmanipulation.reference.Reference;
+import net.fabricmc.fabric.api.networking.v1.PacketSender;
+import net.fabricmc.fabric.api.networking.v1.PacketType;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 
 public class PacketSetDirection extends PacketInt {
-  public PacketSetDirection() {
+
+  public static final PacketType<PacketSetDirection> PACKET_TYPE =
+      PacketType.create(new ResourceLocation(
+          Reference.MOD_ID, "set_direction"), PacketSetDirection::new);
+
+  public PacketSetDirection(FriendlyByteBuf buffer) {
+    super(buffer);
   }
 
   public PacketSetDirection(int direction) {
     super(direction);
   }
 
-  public static class Handler implements IMessageHandler<PacketSetDirection, IMessage> {
+  @Override
+  public PacketType<?> getType() {
+    return PACKET_TYPE;
+  }
+
+  public static class Handler
+      implements ServerPlayNetworking.PlayPacketHandler<PacketSetDirection> {
     @Override
-    public IMessage onMessage(final PacketSetDirection message, final MessageContext ctx) {
-      IThreadListener mainThread = (WorldServer) ctx.getServerHandler().player.world;
-      mainThread.addScheduledTask(new Runnable() {
+    public void receive(PacketSetDirection packet, ServerPlayer player,
+                        PacketSender responseSender) {
+      MinecraftServer mainThread = player.level().getServer();
+      mainThread.execute(new Runnable() {
         @Override
         public void run() {
-          EntityPlayer player = ctx.getServerHandler().player;
-          BitToolSettingsHelper.setDirection(player, player.getHeldItemMainhand(), message.value,
+          BitToolSettingsHelper.setDirection(player, player.getMainHandItem(), packet.value,
               null);
         }
       });
-      return null;
     }
 
   }

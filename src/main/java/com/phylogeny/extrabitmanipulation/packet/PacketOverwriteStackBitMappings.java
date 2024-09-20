@@ -21,7 +21,7 @@ public class PacketOverwriteStackBitMappings extends PacketBitMapIO {
       PacketType.create(new ResourceLocation(
           Reference.MOD_ID, "overwrite_stack_bit_mappings"), PacketOverwriteStackBitMappings::new);
 
-  private Map<BlockState, IBitBrush> bitMap;
+  private final Map<BlockState, IBitBrush> bitMap;
 
   public PacketOverwriteStackBitMappings(FriendlyByteBuf buf) {
     super(buf);

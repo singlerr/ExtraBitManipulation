@@ -3,21 +3,32 @@ package com.phylogeny.extrabitmanipulation.packet;
 import com.phylogeny.extrabitmanipulation.armor.capability.ChiseledArmorSlotsHandler;
 import com.phylogeny.extrabitmanipulation.armor.capability.IChiseledArmorSlotsHandler;
 import com.phylogeny.extrabitmanipulation.client.ClientHelper;
-import io.netty.buffer.ByteBuf;
+import com.phylogeny.extrabitmanipulation.reference.Reference;
 import java.util.UUID;
-import net.minecraft.entity.player.EntityPlayer;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.FabricPacket;
+import net.fabricmc.fabric.api.networking.v1.PacketSender;
+import net.fabricmc.fabric.api.networking.v1.PacketType;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.fml.common.network.ByteBufUtils;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
-public class PacketSyncArmorSlot implements IMessage {
-  private UUID playerID;
-  private ItemStack stack;
-  private int index;
+public class PacketSyncArmorSlot implements FabricPacket {
 
-  public PacketSyncArmorSlot() {
+  public static final PacketType<PacketSyncArmorSlot> PACKET_TYPE =
+      PacketType.create(new ResourceLocation(
+          Reference.MOD_ID, "sync_armor_slot"), PacketSyncArmorSlot::new);
+
+  private final UUID playerID;
+  private final ItemStack stack;
+  private final int index;
+
+  public PacketSyncArmorSlot(FriendlyByteBuf buffer) {
+    playerID = UUID.fromString(buffer.readUtf());
+    stack = buffer.readItem();
+    index = buffer.readInt();
   }
 
   public PacketSyncArmorSlot(UUID playerID, ItemStack stack, int index) {
@@ -27,37 +38,38 @@ public class PacketSyncArmorSlot implements IMessage {
   }
 
   @Override
-  public void toBytes(ByteBuf buffer) {
-    ByteBufUtils.writeUTF8String(buffer, playerID.toString());
-    ByteBufUtils.writeItemStack(buffer, stack);
-    buffer.writeInt(index);
+  public void write(FriendlyByteBuf buf) {
+    buf.writeUtf(playerID.toString());
+    buf.writeItem(stack);
+    buf.writeInt(index);
   }
 
   @Override
-  public void fromBytes(ByteBuf buffer) {
-    playerID = UUID.fromString(ByteBufUtils.readUTF8String(buffer));
-    stack = ByteBufUtils.readItemStack(buffer);
-    index = buffer.readInt();
+  public PacketType<?> getType() {
+    return PACKET_TYPE;
   }
 
-  public static class Handler implements IMessageHandler<PacketSyncArmorSlot, IMessage> {
+  public static class Handler
+      implements ClientPlayNetworking.PlayPacketHandler<PacketSyncArmorSlot> {
+
     @Override
-    public IMessage onMessage(final PacketSyncArmorSlot message, final MessageContext ctx) {
-      ClientHelper.getThreadListener().addScheduledTask(new Runnable() {
+    public void receive(PacketSyncArmorSlot packet, LocalPlayer player,
+                        PacketSender responseSender) {
+      ClientHelper.getThreadListener().execute(new Runnable() {
         @Override
         public void run() {
-          EntityPlayer player = ClientHelper.getWorld().getPlayerEntityByUUID(message.playerID);
+          Player player = ClientHelper.getWorld().getPlayerByUUID(packet.playerID);
           if (player == null) {
             return;
           }
 
-          IChiseledArmorSlotsHandler cap = ChiseledArmorSlotsHandler.getCapability(player);
+          IChiseledArmorSlotsHandler cap =
+              ChiseledArmorSlotsHandler.getCapability(player).orElse(null);
           if (cap != null) {
-            cap.setStackInSlot(message.index, message.stack);
+            cap.setStackInSlot(packet.index, packet.stack);
           }
         }
       });
-      return null;
     }
 
   }

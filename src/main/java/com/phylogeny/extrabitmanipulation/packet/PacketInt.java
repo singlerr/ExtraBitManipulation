@@ -1,12 +1,13 @@
 package com.phylogeny.extrabitmanipulation.packet;
 
-import io.netty.buffer.ByteBuf;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.fabricmc.fabric.api.networking.v1.FabricPacket;
+import net.minecraft.network.FriendlyByteBuf;
 
-public abstract class PacketInt implements IMessage {
+public abstract class PacketInt implements FabricPacket {
   protected int value;
 
-  public PacketInt() {
+  public PacketInt(FriendlyByteBuf buffer) {
+    this.value = buffer.readInt();
   }
 
   public PacketInt(int value) {
@@ -14,13 +15,7 @@ public abstract class PacketInt implements IMessage {
   }
 
   @Override
-  public void toBytes(ByteBuf buffer) {
-    buffer.writeInt(value);
+  public void write(FriendlyByteBuf buf) {
+    buf.writeInt(value);
   }
-
-  @Override
-  public void fromBytes(ByteBuf buffer) {
-    value = buffer.readInt();
-  }
-
 }

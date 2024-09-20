@@ -4,26 +4,37 @@ import com.phylogeny.extrabitmanipulation.helper.BitIOHelper;
 import com.phylogeny.extrabitmanipulation.helper.BitToolSettingsHelper.SculptingData;
 import com.phylogeny.extrabitmanipulation.helper.ItemStackHelper;
 import com.phylogeny.extrabitmanipulation.item.ItemSculptingTool;
-import io.netty.buffer.ByteBuf;
+import com.phylogeny.extrabitmanipulation.reference.Reference;
+import net.fabricmc.fabric.api.networking.v1.PacketSender;
+import net.fabricmc.fabric.api.networking.v1.PacketType;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.BlockPos;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.IThreadListener;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.WorldServer;
+import net.minecraft.core.Direction;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import net.minecraft.world.phys.Vec3;
 
-public class PacketSculpt extends PacketBlockInteraction implements IMessage {
-  private Vec3d drawnStartPoint;
+public class PacketSculpt extends PacketBlockInteraction {
+
+  public static final PacketType<PacketSculpt> PACKET_TYPE = PacketType.create(new ResourceLocation(
+      Reference.MOD_ID, "sculpt"), PacketSculpt::new);
+
+  private Vec3 drawnStartPoint;
   private SculptingData sculptingData = new SculptingData();
 
-  public PacketSculpt() {
+  public PacketSculpt(FriendlyByteBuf buffer) {
+    super(buffer);
+    if (buffer.readBoolean()) {
+      drawnStartPoint = new Vec3(buffer.readDouble(), buffer.readDouble(), buffer.readDouble());
+    }
+
+    sculptingData.fromBytes(buffer);
   }
 
-  public PacketSculpt(BlockPos pos, EnumFacing side, Vec3d hit, Vec3d drawnStartPoint,
+  public PacketSculpt(BlockPos pos, Direction side, Vec3 hit, Vec3 drawnStartPoint,
                       SculptingData sculptingData) {
     super(pos, side, hit);
     this.drawnStartPoint = drawnStartPoint;
@@ -31,8 +42,8 @@ public class PacketSculpt extends PacketBlockInteraction implements IMessage {
   }
 
   @Override
-  public void toBytes(ByteBuf buffer) {
-    super.toBytes(buffer);
+  public void write(FriendlyByteBuf buffer) {
+    super.write(buffer);
     if (BitIOHelper.notNullToBuffer(buffer, drawnStartPoint)) {
       buffer.writeDouble(drawnStartPoint.x);
       buffer.writeDouble(drawnStartPoint.y);
@@ -42,34 +53,27 @@ public class PacketSculpt extends PacketBlockInteraction implements IMessage {
   }
 
   @Override
-  public void fromBytes(ByteBuf buffer) {
-    super.fromBytes(buffer);
-    if (buffer.readBoolean()) {
-      drawnStartPoint = new Vec3d(buffer.readDouble(), buffer.readDouble(), buffer.readDouble());
-    }
-
-    sculptingData.fromBytes(buffer);
+  public PacketType<?> getType() {
+    return PACKET_TYPE;
   }
 
-  public static class Handler implements IMessageHandler<PacketSculpt, IMessage> {
+  public static class Handler implements ServerPlayNetworking.PlayPacketHandler<PacketSculpt> {
     @Override
-    public IMessage onMessage(final PacketSculpt message, final MessageContext ctx) {
-      IThreadListener mainThread = (WorldServer) ctx.getServerHandler().player.world;
-      mainThread.addScheduledTask(new Runnable() {
+    public void receive(PacketSculpt message, ServerPlayer player, PacketSender responseSender) {
+      MinecraftServer mainThread = player.level().getServer();
+      mainThread.execute(new Runnable() {
         @Override
         public void run() {
-          EntityPlayer player = ctx.getServerHandler().player;
-          ItemStack stack = player.getHeldItemMainhand();
+          ItemStack stack = player.getMainHandItem();
           if (ItemStackHelper.isSculptingToolStack(stack)) {
-            ((ItemSculptingTool) stack.getItem()).sculptBlocks(stack, player, player.world,
+            ((ItemSculptingTool) stack.getItem()).sculptBlocks(stack, player, player.level(),
                 message.pos,
                 message.side, message.hit, message.drawnStartPoint, message.sculptingData);
           }
         }
       });
-      return null;
-    }
 
+    }
   }
 
 }

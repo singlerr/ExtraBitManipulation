@@ -1,19 +1,27 @@
 package com.phylogeny.extrabitmanipulation.packet;
 
 import com.phylogeny.extrabitmanipulation.helper.BitInventoryHelper;
-import io.netty.buffer.ByteBuf;
-import net.minecraft.util.IThreadListener;
-import net.minecraft.world.WorldServer;
+import com.phylogeny.extrabitmanipulation.reference.Reference;
+import net.fabricmc.fabric.api.networking.v1.FabricPacket;
+import net.fabricmc.fabric.api.networking.v1.PacketSender;
+import net.fabricmc.fabric.api.networking.v1.PacketType;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.fml.common.network.ByteBufUtils;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
-public class PacketSetDesign implements IMessage {
-  private ItemStack stack;
+public class PacketSetDesign implements FabricPacket {
 
-  public PacketSetDesign() {
+  public static final PacketType<PacketSetDesign> PACKET_TYPE =
+      PacketType.create(new ResourceLocation(
+          Reference.MOD_ID, "set_design"), PacketSetDesign::new);
+
+  private final ItemStack stack;
+
+  public PacketSetDesign(FriendlyByteBuf buffer) {
+    this.stack = buffer.readItem();
   }
 
   public PacketSetDesign(ItemStack stack) {
@@ -21,26 +29,25 @@ public class PacketSetDesign implements IMessage {
   }
 
   @Override
-  public void toBytes(ByteBuf buffer) {
-    ByteBufUtils.writeItemStack(buffer, stack);
+  public void write(FriendlyByteBuf buf) {
+    buf.writeItem(stack);
   }
 
   @Override
-  public void fromBytes(ByteBuf buffer) {
-    stack = ByteBufUtils.readItemStack(buffer);
+  public PacketType<?> getType() {
+    return PACKET_TYPE;
   }
 
-  public static class Handler implements IMessageHandler<PacketSetDesign, IMessage> {
+  public static class Handler implements ServerPlayNetworking.PlayPacketHandler<PacketSetDesign> {
     @Override
-    public IMessage onMessage(final PacketSetDesign message, final MessageContext ctx) {
-      IThreadListener mainThread = (WorldServer) ctx.getServerHandler().player.world;
-      mainThread.addScheduledTask(new Runnable() {
+    public void receive(PacketSetDesign packet, ServerPlayer player, PacketSender responseSender) {
+      MinecraftServer mainThread = player.level().getServer();
+      mainThread.execute(new Runnable() {
         @Override
         public void run() {
-          BitInventoryHelper.setHeldDesignStack(ctx.getServerHandler().player, message.stack);
+          BitInventoryHelper.setHeldDesignStack(player, packet.stack);
         }
       });
-      return null;
     }
 
   }

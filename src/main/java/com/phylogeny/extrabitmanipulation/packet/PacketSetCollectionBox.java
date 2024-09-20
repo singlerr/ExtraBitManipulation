@@ -2,29 +2,39 @@ package com.phylogeny.extrabitmanipulation.packet;
 
 import com.phylogeny.extrabitmanipulation.helper.ItemStackHelper;
 import com.phylogeny.extrabitmanipulation.item.ItemChiseledArmor;
-import io.netty.buffer.ByteBuf;
+import com.phylogeny.extrabitmanipulation.reference.Reference;
+import net.fabricmc.fabric.api.networking.v1.PacketSender;
+import net.fabricmc.fabric.api.networking.v1.PacketType;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.BlockPos;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.IThreadListener;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.WorldServer;
+import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import net.minecraft.world.phys.Vec3;
 
 public class PacketSetCollectionBox extends PacketBlockInteraction {
-  private float playerYaw;
-  private boolean useBitGrid;
-  private EnumFacing facingBox;
 
-  public PacketSetCollectionBox() {
+  public static final PacketType<PacketSetCollectionBox> PACKET_TYPE =
+      PacketType.create(new ResourceLocation(
+          Reference.MOD_ID, "set_collection_box"), PacketSetCollectionBox::new);
+
+  private final float playerYaw;
+  private final boolean useBitGrid;
+  private final Direction facingBox;
+
+  public PacketSetCollectionBox(FriendlyByteBuf buffer) {
+    super(buffer);
+    playerYaw = buffer.readFloat();
+    useBitGrid = buffer.readBoolean();
+    facingBox = Direction.from3DDataValue(buffer.readInt());
   }
 
-  public PacketSetCollectionBox(float playerYaw, boolean useBitGrid, EnumFacing facingBox,
-                                BlockPos pos, EnumFacing facingPlacement, Vec3d hit) {
+  public PacketSetCollectionBox(float playerYaw, boolean useBitGrid, Direction facingBox,
+                                BlockPos pos, Direction facingPlacement, Vec3 hit) {
     super(pos, facingPlacement, hit);
     this.playerYaw = playerYaw;
     this.useBitGrid = useBitGrid;
@@ -32,40 +42,38 @@ public class PacketSetCollectionBox extends PacketBlockInteraction {
   }
 
   @Override
-  public void toBytes(ByteBuf buffer) {
-    super.toBytes(buffer);
+  public void write(FriendlyByteBuf buffer) {
+    super.write(buffer);
     buffer.writeFloat(playerYaw);
     buffer.writeBoolean(useBitGrid);
     buffer.writeInt(facingBox.ordinal());
   }
 
   @Override
-  public void fromBytes(ByteBuf buffer) {
-    super.fromBytes(buffer);
-    playerYaw = buffer.readFloat();
-    useBitGrid = buffer.readBoolean();
-    facingBox = EnumFacing.getFront(buffer.readInt());
+  public PacketType<?> getType() {
+    return PACKET_TYPE;
   }
 
-  public static class Handler implements IMessageHandler<PacketSetCollectionBox, IMessage> {
+  public static class Handler
+      implements ServerPlayNetworking.PlayPacketHandler<PacketSetCollectionBox> {
+
     @Override
-    public IMessage onMessage(final PacketSetCollectionBox message, final MessageContext ctx) {
-      IThreadListener mainThread = (WorldServer) ctx.getServerHandler().player.world;
-      mainThread.addScheduledTask(new Runnable() {
+    public void receive(PacketSetCollectionBox message, ServerPlayer player,
+                        PacketSender responseSender) {
+      MinecraftServer mainThread = player.level().getServer();
+      mainThread.execute(new Runnable() {
         @Override
         public void run() {
-          EntityPlayer player = ctx.getServerHandler().player;
-          ItemStack stack = player.getHeldItemMainhand();
+          ItemStack stack = player.getMainHandItem();
           if (ItemStackHelper.isChiseledArmorStack(stack)) {
-            NBTTagCompound nbt = ItemStackHelper.getNBTOrNew(stack);
+            CompoundTag nbt = ItemStackHelper.getNBTOrNew(stack);
             ItemChiseledArmor.writeCollectionBoxToNBT(nbt, message.playerYaw, message.useBitGrid,
                 message.facingBox, message.pos, message.side, message.hit);
-            stack.setTagCompound(nbt);
-            player.inventoryContainer.detectAndSendChanges();
+            stack.setTag(nbt);
+            player.inventoryMenu.sendAllDataToRemote();
           }
         }
       });
-      return null;
     }
 
   }

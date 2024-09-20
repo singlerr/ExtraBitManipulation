@@ -1,19 +1,26 @@
 package com.phylogeny.extrabitmanipulation.packet;
 
-import io.netty.buffer.ByteBuf;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.util.IThreadListener;
-import net.minecraft.world.WorldServer;
+import com.phylogeny.extrabitmanipulation.reference.Reference;
+import net.fabricmc.fabric.api.networking.v1.FabricPacket;
+import net.fabricmc.fabric.api.networking.v1.PacketSender;
+import net.fabricmc.fabric.api.networking.v1.PacketType;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.fml.common.network.ByteBufUtils;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
-public class PacketCursorStack implements IMessage {
-  private ItemStack stack;
+public class PacketCursorStack implements FabricPacket {
 
-  public PacketCursorStack() {
+  public static final PacketType<PacketCursorStack> PACKET_TYPE =
+      PacketType.create(new ResourceLocation(
+          Reference.MOD_ID, "cursor_stack"), PacketCursorStack::new);
+
+  private final ItemStack stack;
+
+  public PacketCursorStack(FriendlyByteBuf buf) {
+    stack = buf.readItem();
   }
 
   public PacketCursorStack(ItemStack stack) {
@@ -21,29 +28,29 @@ public class PacketCursorStack implements IMessage {
   }
 
   @Override
-  public void toBytes(ByteBuf buffer) {
-    ByteBufUtils.writeItemStack(buffer, stack);
+  public void write(FriendlyByteBuf buf) {
+    buf.writeItem(stack);
   }
 
   @Override
-  public void fromBytes(ByteBuf buffer) {
-    stack = ByteBufUtils.readItemStack(buffer);
+  public PacketType<?> getType() {
+    return PACKET_TYPE;
   }
 
-  public static class Handler implements IMessageHandler<PacketCursorStack, IMessage> {
+  public static class Handler implements ServerPlayNetworking.PlayPacketHandler<PacketCursorStack> {
+
     @Override
-    public IMessage onMessage(final PacketCursorStack message, final MessageContext ctx) {
-      IThreadListener mainThread = (WorldServer) ctx.getServerHandler().player.world;
-      mainThread.addScheduledTask(new Runnable() {
+    public void receive(PacketCursorStack packet, ServerPlayer player,
+                        PacketSender responseSender) {
+      MinecraftServer mainThread = player.level().getServer();
+      mainThread.execute(new Runnable() {
         @Override
         public void run() {
-          EntityPlayerMP player = ctx.getServerHandler().player;
-          if (player.capabilities.isCreativeMode) {
-            player.inventory.setItemStack(message.stack);
+          if (player.isCreative()) {
+            player.inventoryMenu.setCarried(packet.stack);
           }
         }
       });
-      return null;
     }
 
   }

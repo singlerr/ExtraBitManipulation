@@ -3,36 +3,52 @@ package com.phylogeny.extrabitmanipulation.packet;
 import com.phylogeny.extrabitmanipulation.ExtraBitManipulation;
 import com.phylogeny.extrabitmanipulation.helper.ItemStackHelper;
 import com.phylogeny.extrabitmanipulation.reference.GuiIDs;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.IThreadListener;
-import net.minecraft.world.WorldServer;
+import com.phylogeny.extrabitmanipulation.reference.Reference;
+import net.fabricmc.fabric.api.networking.v1.PacketSender;
+import net.fabricmc.fabric.api.networking.v1.PacketType;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
 public class PacketOpenBitMappingGui extends PacketEmpty {
-  public PacketOpenBitMappingGui() {
+
+  public static final PacketType<PacketOpenBitMappingGui> PACKET_TYPE =
+      PacketType.create(new ResourceLocation(
+          Reference.MOD_ID, "open_bit_mapping_gui"), PacketOpenBitMappingGui::new);
+
+  public PacketOpenBitMappingGui(FriendlyByteBuf buffer) {
+    super(buffer);
   }
 
-  public static class Handler implements IMessageHandler<PacketOpenBitMappingGui, IMessage> {
+  @Override
+  public PacketType<?> getType() {
+    return PACKET_TYPE;
+  }
+
+  public static class Handler implements
+      ServerPlayNetworking.PlayPacketHandler<PacketOpenBitMappingGui> {
+
     @Override
-    public IMessage onMessage(final PacketOpenBitMappingGui message, final MessageContext ctx) {
-      IThreadListener mainThread = (WorldServer) ctx.getServerHandler().player.world;
-      mainThread.addScheduledTask(new Runnable() {
+    public void receive(PacketOpenBitMappingGui packet, ServerPlayer player,
+                        PacketSender responseSender) {
+      MinecraftServer mainThread = player.level().getServer();
+      mainThread.execute(new Runnable() {
         @Override
         public void run() {
-          EntityPlayer player = ctx.getServerHandler().player;
-          ItemStack stack = player.getHeldItemMainhand();
+          ItemStack stack = player.getMainHandItem();
           if (ItemStackHelper.isModelingToolStack(stack) || ItemStackHelper.isDesignStack(stack)) {
-            player.openGui(ExtraBitManipulation.instance, GuiIDs.BIT_MAPPING.getID(), player.world,
+            TODO("Implement menu provider")
+            player.openMenu(ExtraBitManipulation.instance, GuiIDs.BIT_MAPPING.getID(),
+                player.level(),
                 0, 0, 0);
+
           }
         }
       });
-      return null;
     }
-
   }
 
 }

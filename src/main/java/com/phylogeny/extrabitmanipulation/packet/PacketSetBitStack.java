@@ -2,23 +2,31 @@ package com.phylogeny.extrabitmanipulation.packet;
 
 import com.phylogeny.extrabitmanipulation.api.ChiselsAndBitsAPIAccess;
 import com.phylogeny.extrabitmanipulation.helper.BitToolSettingsHelper;
-import io.netty.buffer.ByteBuf;
+import com.phylogeny.extrabitmanipulation.reference.Reference;
 import mod.chiselsandbits.api.APIExceptions.InvalidBitItem;
 import mod.chiselsandbits.api.IBitBrush;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.IThreadListener;
-import net.minecraft.world.WorldServer;
+import net.fabricmc.fabric.api.networking.v1.FabricPacket;
+import net.fabricmc.fabric.api.networking.v1.PacketSender;
+import net.fabricmc.fabric.api.networking.v1.PacketType;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.fml.common.network.ByteBufUtils;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
-public class PacketSetBitStack implements IMessage {
-  private boolean isWire;
-  private ItemStack bitStack;
+public class PacketSetBitStack implements FabricPacket {
 
-  public PacketSetBitStack() {
+  public static final PacketType<PacketSetBitStack> PACKET_TYPE =
+      PacketType.create(new ResourceLocation(
+          Reference.MOD_ID, "set_bit_stack"), PacketSetBitStack::new);
+
+  private final boolean isWire;
+  private final ItemStack bitStack;
+
+  public PacketSetBitStack(FriendlyByteBuf buffer) {
+    isWire = buffer.readBoolean();
+    bitStack = buffer.readItem();
   }
 
   public PacketSetBitStack(boolean isCurved, IBitBrush bit) {
@@ -27,34 +35,34 @@ public class PacketSetBitStack implements IMessage {
   }
 
   @Override
-  public void toBytes(ByteBuf buffer) {
-    buffer.writeBoolean(isWire);
-    ByteBufUtils.writeItemStack(buffer, bitStack);
+  public void write(FriendlyByteBuf buf) {
+    buf.writeBoolean(isWire);
+    buf.writeItem(bitStack);
   }
 
   @Override
-  public void fromBytes(ByteBuf buffer) {
-    isWire = buffer.readBoolean();
-    bitStack = ByteBufUtils.readItemStack(buffer);
+  public PacketType<?> getType() {
+    return PACKET_TYPE;
   }
 
-  public static class Handler implements IMessageHandler<PacketSetBitStack, IMessage> {
+  public static class Handler implements ServerPlayNetworking.PlayPacketHandler<PacketSetBitStack> {
+
     @Override
-    public IMessage onMessage(final PacketSetBitStack message, final MessageContext ctx) {
-      IThreadListener mainThread = (WorldServer) ctx.getServerHandler().player.world;
-      mainThread.addScheduledTask(new Runnable() {
+    public void receive(PacketSetBitStack packet, ServerPlayer player,
+                        PacketSender responseSender) {
+      MinecraftServer mainThread = player.level().getServer();
+      mainThread.execute(new Runnable() {
         @Override
         public void run() {
-          EntityPlayer player = ctx.getServerHandler().player;
           try {
-            BitToolSettingsHelper.setBitStack(player, player.getHeldItemMainhand(), message.isWire,
-                ChiselsAndBitsAPIAccess.apiInstance.createBrush(message.bitStack), null);
+            BitToolSettingsHelper.setBitStack(player, player.getMainHandItem(), packet.isWire,
+                ChiselsAndBitsAPIAccess.apiInstance.createBrush(packet.bitStack), null);
           } catch (InvalidBitItem e) {
           }
         }
       });
-      return null;
     }
+
 
   }
 

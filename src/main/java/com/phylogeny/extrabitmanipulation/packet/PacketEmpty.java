@@ -1,18 +1,19 @@
 package com.phylogeny.extrabitmanipulation.packet;
 
-import io.netty.buffer.ByteBuf;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.fabricmc.fabric.api.networking.v1.FabricPacket;
+import net.minecraft.network.FriendlyByteBuf;
 
-public abstract class PacketEmpty implements IMessage {
+public abstract class PacketEmpty implements FabricPacket {
   public PacketEmpty() {
   }
 
-  @Override
-  public void toBytes(ByteBuf buffer) {
+  public PacketEmpty(FriendlyByteBuf buf) {
+
   }
 
-  @Override
-  public void fromBytes(ByteBuf buffer) {
-  }
 
+  @Override
+  public void write(FriendlyByteBuf buf) {
+
+  }
 }

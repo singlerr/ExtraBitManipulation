@@ -2,39 +2,54 @@ package com.phylogeny.extrabitmanipulation.packet;
 
 import com.phylogeny.extrabitmanipulation.ExtraBitManipulation;
 import com.phylogeny.extrabitmanipulation.reference.GuiIDs;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.IThreadListener;
-import net.minecraft.world.WorldServer;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import com.phylogeny.extrabitmanipulation.reference.Reference;
+import net.fabricmc.fabric.api.networking.v1.PacketSender;
+import net.fabricmc.fabric.api.networking.v1.PacketType;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 
 public class PacketOpenInventoryGui extends PacketBoolean {
-  public PacketOpenInventoryGui() {
+
+  public static final PacketType<PacketOpenInventoryGui> PACKET_TYPE =
+      PacketType.create(new ResourceLocation(
+          Reference.MOD_ID, "open_inventory_gui"), PacketOpenInventoryGui::new);
+
+  public PacketOpenInventoryGui(FriendlyByteBuf friendlyByteBuf) {
+    super(friendlyByteBuf);
   }
 
   public PacketOpenInventoryGui(boolean openVanilla) {
     super(openVanilla);
   }
 
-  public static class Handler implements IMessageHandler<PacketOpenInventoryGui, IMessage> {
+  @Override
+  public PacketType<?> getType() {
+    return PACKET_TYPE;
+  }
+
+  public static class Handler
+      implements ServerPlayNetworking.PlayPacketHandler<PacketOpenInventoryGui> {
+
     @Override
-    public IMessage onMessage(final PacketOpenInventoryGui message, final MessageContext ctx) {
-      IThreadListener mainThread = (WorldServer) ctx.getServerHandler().player.world;
-      mainThread.addScheduledTask(new Runnable() {
+    public void receive(PacketOpenInventoryGui packet, ServerPlayer player,
+                        PacketSender responseSender) {
+      MinecraftServer mainThread = player.level().getServer();
+      mainThread.execute(new Runnable() {
         @Override
         public void run() {
-          EntityPlayer player = ctx.getServerHandler().player;
-          player.openContainer.onContainerClosed(player);
-          if (message.value) {
-            player.openContainer = player.inventoryContainer;
+          player.inventoryMenu.removed(player);
+          if (packet.value) {
+            player.containerMenu = player.inventoryMenu;
           } else {
             player.openGui(ExtraBitManipulation.instance, GuiIDs.CHISELED_ARMOR_SLOTS.getID(),
                 player.world, 0, 0, 0);
           }
         }
       });
-      return null;
+
     }
 
   }

@@ -13,11 +13,11 @@ import com.phylogeny.extrabitmanipulation.init.SoundsExtraBitManipulation;
 import com.phylogeny.extrabitmanipulation.reference.ChiselsAndBitsReferences;
 import com.phylogeny.extrabitmanipulation.reference.Configs;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
 import net.minecraft.client.color.item.ItemColor;
 import net.minecraft.client.renderer.entity.Render;
 import net.minecraft.client.renderer.entity.RenderManager;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.registry.IRenderFactory;
 import net.minecraftforge.fml.client.registry.RenderingRegistry;
 import net.minecraftforge.fml.common.event.FMLInterModComms;
@@ -27,9 +27,10 @@ public class ProxyClient implements ClientModInitializer {
   public void onInitializeClient() {
     // Pre Init
     ReflectionExtraBitManipulation.initReflectionFieldsClient();
-    MinecraftForge.EVENT_BUS.register(new ClientEventHandler());
-    MinecraftForge.EVENT_BUS.register(new SoundsExtraBitManipulation());
-    MinecraftForge.EVENT_BUS.register(new ModelRegistration());
+    ClientEventHandler.registerEventListeners();
+    SoundsExtraBitManipulation.registerSounds();
+    ModelLoadingPlugin.register(new ModelRegistration());
+
     RenderingRegistry.registerEntityRenderingHandler(EntityBit.class,
         new IRenderFactory<EntityBit>() {
           @Override

@@ -3,58 +3,66 @@ package com.phylogeny.extrabitmanipulation.packet;
 import com.phylogeny.extrabitmanipulation.helper.BitToolSettingsHelper.ModelWriteData;
 import com.phylogeny.extrabitmanipulation.helper.ItemStackHelper;
 import com.phylogeny.extrabitmanipulation.item.ItemModelingTool;
-import io.netty.buffer.ByteBuf;
+import com.phylogeny.extrabitmanipulation.reference.Reference;
+import net.fabricmc.fabric.api.networking.v1.PacketSender;
+import net.fabricmc.fabric.api.networking.v1.PacketType;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.BlockPos;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.IThreadListener;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.WorldServer;
+import net.minecraft.core.Direction;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
+import net.minecraft.world.phys.Vec3;
 
-public class PacketCreateModel extends PacketBlockInteraction implements IMessage {
+public class PacketCreateModel extends PacketBlockInteraction {
+
+  public static final PacketType<PacketCreateModel> PACKET_TYPE =
+      PacketType.create(new ResourceLocation(
+          Reference.MOD_ID, "create_model"), PacketCreateModel::new);
+
   private ModelWriteData modelingData = new ModelWriteData();
 
-  public PacketCreateModel() {
+  public PacketCreateModel(FriendlyByteBuf buffer) {
+    super(buffer);
+    modelingData.fromBytes(buffer);
   }
 
-  public PacketCreateModel(BlockPos pos, EnumFacing side, ModelWriteData modelingData) {
-    super(pos, side, new Vec3d(0, 0, 0));
+  public PacketCreateModel(BlockPos pos, Direction side, ModelWriteData modelingData) {
+    super(pos, side, new Vec3(0, 0, 0));
     this.modelingData = modelingData;
   }
 
   @Override
-  public void toBytes(ByteBuf buffer) {
-    super.toBytes(buffer);
+  public void write(FriendlyByteBuf buffer) {
+    super.write(buffer);
     modelingData.toBytes(buffer);
   }
 
   @Override
-  public void fromBytes(ByteBuf buffer) {
-    super.fromBytes(buffer);
-    modelingData.fromBytes(buffer);
+  public PacketType<?> getType() {
+    return PACKET_TYPE;
   }
 
-  public static class Handler implements IMessageHandler<PacketCreateModel, IMessage> {
+  public static class Handler implements ServerPlayNetworking.PlayPacketHandler<PacketCreateModel> {
     @Override
-    public IMessage onMessage(final PacketCreateModel message, final MessageContext ctx) {
-      IThreadListener mainThread = (WorldServer) ctx.getServerHandler().player.world;
-      mainThread.addScheduledTask(new Runnable() {
+    public void receive(PacketCreateModel message, ServerPlayer player,
+                        PacketSender responseSender) {
+      MinecraftServer mainThread = player.level().getServer();
+      mainThread.execute(new Runnable() {
         @Override
         public void run() {
-          EntityPlayer player = ctx.getServerHandler().player;
-          ItemStack stack = player.getHeldItemMainhand();
+          ItemStack stack = player.getMainHandItem();
           if (ItemStackHelper.isModelingToolStack(stack)) {
-            ((ItemModelingTool) stack.getItem()).createModel(stack, player, player.world,
+            ((ItemModelingTool) stack.getItem()).createModel(stack, player, player.level(),
                 message.pos, message.side, message.modelingData);
           }
         }
       });
-      return null;
+
     }
+
 
   }
 

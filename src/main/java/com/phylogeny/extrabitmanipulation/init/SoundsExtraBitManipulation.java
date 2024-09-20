@@ -2,32 +2,30 @@ package com.phylogeny.extrabitmanipulation.init;
 
 import com.phylogeny.extrabitmanipulation.reference.Reference;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.audio.PositionedSoundRecord;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
-import net.minecraftforge.event.RegistryEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 public class SoundsExtraBitManipulation {
   public static SoundEvent boxCheck, boxUncheck;
 
-  @SubscribeEvent
-  public void registerSounds(RegistryEvent.Register<SoundEvent> event) {
-    boxCheck = registerSound(event, "box_check");
-    boxUncheck = registerSound(event, "box_uncheck");
+  public static void registerSounds() {
+    boxCheck = registerSound("box_check");
+    boxUncheck = registerSound("box_uncheck");
   }
 
-  private static SoundEvent registerSound(RegistryEvent.Register<SoundEvent> event,
-                                          String soundName) {
+  private static SoundEvent registerSound(String soundName) {
     ResourceLocation soundNameResLoc = new ResourceLocation(Reference.MOD_ID + ":" + soundName);
-    SoundEvent sound = new SoundEvent(soundNameResLoc).setRegistryName(soundNameResLoc);
-    event.getRegistry().register(sound);
+
+    SoundEvent sound = SoundEvent.createVariableRangeEvent(soundNameResLoc);
+    Registry.register(BuiltInRegistries.SOUND_EVENT, soundName, sound);
     return sound;
   }
 
   public static void playSound(SoundEvent sound) {
-    Minecraft.getMinecraft().getSoundHandler()
-        .playSound(PositionedSoundRecord.getMasterRecord(sound, 1.0F));
+    Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI(sound, 1.0F));
   }
 
 }

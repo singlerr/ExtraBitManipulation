@@ -5,59 +5,66 @@ import com.phylogeny.extrabitmanipulation.client.ClientHelper;
 import com.phylogeny.extrabitmanipulation.helper.ItemStackHelper;
 import com.phylogeny.extrabitmanipulation.item.ItemChiseledArmor.ArmorType;
 import com.phylogeny.extrabitmanipulation.reference.NBTKeys;
-import io.netty.buffer.ByteBuf;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.nbt.NBTBase;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
-import net.minecraft.util.IThreadListener;
-import net.minecraft.world.WorldServer;
+import com.phylogeny.extrabitmanipulation.reference.Reference;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.PacketSender;
+import net.fabricmc.fabric.api.networking.v1.PacketType;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.common.util.Constants.NBT;
-import net.minecraftforge.fml.common.network.ByteBufUtils;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
-import net.minecraftforge.fml.relauncher.Side;
 
 public class PacketChangeGlOperationList extends PacketChangeChiseledArmorList {
-  private String nbtKey;
 
-  public PacketChangeGlOperationList() {
+  public static final PacketType<PacketChangeGlOperationList> PACKET_TYPE =
+      PacketType.create(new ResourceLocation(
+          Reference.MOD_ID, "change_gl_operation_list"), PacketChangeGlOperationList::new);
+
+  private final String nbtKey;
+
+  public PacketChangeGlOperationList(FriendlyByteBuf buffer) {
+    super(buffer);
+    nbtKey = buffer.readUtf();
   }
 
-  public PacketChangeGlOperationList(NBTTagCompound nbt, String nbtKey, ArmorType armorType,
+  public PacketChangeGlOperationList(CompoundTag nbt, String nbtKey, ArmorType armorType,
                                      int indexArmorSet, int partIndex, int armorItemIndex,
-                                     int selectedEntry, boolean refreshLists, EntityPlayer player) {
+                                     int selectedEntry, boolean refreshLists, Player player) {
     super(nbt, armorType, indexArmorSet, partIndex, armorItemIndex, selectedEntry, refreshLists,
         player);
     this.nbtKey = nbtKey;
   }
 
   @Override
-  public void toBytes(ByteBuf buffer) {
-    super.toBytes(buffer);
-    ByteBufUtils.writeUTF8String(buffer, nbtKey);
+  public void write(FriendlyByteBuf buffer) {
+    super.write(buffer);
+    buffer.writeUtf(nbtKey);
   }
+
 
   @Override
-  public void fromBytes(ByteBuf buffer) {
-    super.fromBytes(buffer);
-    nbtKey = ByteBufUtils.readUTF8String(buffer);
+  public PacketType<?> getType() {
+    return PACKET_TYPE;
   }
 
-  public static class Handler implements IMessageHandler<PacketChangeGlOperationList, IMessage> {
+  public static class ClientHandler implements
+      ClientPlayNetworking.PlayPacketHandler<PacketChangeGlOperationList> {
+
     @Override
-    public IMessage onMessage(final PacketChangeGlOperationList message, final MessageContext ctx) {
-      final boolean serverSide = ctx.side == Side.SERVER;
-      IThreadListener mainThread = serverSide ? (WorldServer) ctx.getServerHandler().player.world :
-          ClientHelper.getThreadListener();
-      mainThread.addScheduledTask(new Runnable() {
+    public void receive(PacketChangeGlOperationList message, LocalPlayer player,
+                        PacketSender responseSender) {
+      var mainThread = ClientHelper.getThreadListener();
+      mainThread.execute(new Runnable() {
         @Override
         public void run() {
-          EntityPlayer player =
-              serverSide ? ctx.getServerHandler().player : ClientHelper.getPlayer();
+          Player player = ClientHelper.getPlayer();
           ItemStack stack = ItemStackHelper.getChiseledArmorStack(player, message.armorType,
               message.indexArmorSet);
           if (!ItemStackHelper.isChiseledArmorStack(stack)) {
@@ -65,36 +72,78 @@ public class PacketChangeGlOperationList extends PacketChangeChiseledArmorList {
           }
 
           message.initData(message, stack);
-          NBTTagCompound nbt = ItemStackHelper.getNBT(stack);
-          NBTTagCompound data = message.getData(nbt, serverSide);
-          NBTTagList glOperationList = message.nbt.getTagList(message.nbtKey, NBT.TAG_COMPOUND);
+          CompoundTag nbt = ItemStackHelper.getNBT(stack);
+          CompoundTag data = message.getData(nbt, false);
+          ListTag glOperationList = message.nbt.getList(message.nbtKey, ListTag.TAG_COMPOUND);
           if (message.nbtKey.equals(NBTKeys.ARMOR_GL_OPERATIONS)) {
-            NBTTagList movingParts = data.getTagList(NBTKeys.ARMOR_PART_DATA, NBT.TAG_LIST);
-            NBTBase nbtBase = movingParts.get(message.value);
-            if (nbtBase.getId() != NBT.TAG_LIST) {
+            ListTag movingParts = data.getList(NBTKeys.ARMOR_PART_DATA, ListTag.TAG_LIST);
+            Tag nbtBase = movingParts.get(message.value);
+            if (nbtBase.getId() != ListTag.TAG_LIST) {
               return;
             }
 
-            NBTTagList itemList = (NBTTagList) nbtBase;
-            NBTTagCompound armorItemNbt = itemList.getCompoundTagAt(message.armorItemIndex);
-            armorItemNbt.setTag(message.nbtKey, glOperationList);
+            ListTag itemList = (ListTag) nbtBase;
+            CompoundTag armorItemNbt = itemList.getCompound(message.armorItemIndex);
+            armorItemNbt.put(message.nbtKey, glOperationList);
             itemList.set(message.armorItemIndex, armorItemNbt);
-            data.setTag(NBTKeys.ARMOR_PART_DATA, movingParts);
+            data.put(NBTKeys.ARMOR_PART_DATA, movingParts);
           } else {
-            data.setTag(message.nbtKey, glOperationList);
+            data.put(message.nbtKey, glOperationList);
           }
-          message.finalizeDataChange(message, stack, nbt, data, serverSide, false, false, -1);
-          if (serverSide) {
-            ExtraBitManipulation.packetNetwork.sendTo(
-                new PacketChangeGlOperationList(message.nbt, message.nbtKey,
-                    message.armorType, message.indexArmorSet, message.value, message.armorItemIndex,
-                    message.selectedEntry, message.refreshLists, player), (EntityPlayerMP) player);
-          }
+          message.finalizeDataChange(message, stack, nbt, data, false, false, false, -1);
         }
       });
-      return null;
+
     }
 
+
+  }
+
+
+  public static class ServerHandler
+      implements ServerPlayNetworking.PlayPacketHandler<PacketChangeGlOperationList> {
+
+    @Override
+    public void receive(PacketChangeGlOperationList message, ServerPlayer player,
+                        PacketSender responseSender) {
+      MinecraftServer mainThread = player.level().getServer();
+      mainThread.execute(new Runnable() {
+        @Override
+        public void run() {
+          ItemStack stack = ItemStackHelper.getChiseledArmorStack(player, message.armorType,
+              message.indexArmorSet);
+          if (!ItemStackHelper.isChiseledArmorStack(stack)) {
+            return;
+          }
+
+          message.initData(message, stack);
+          CompoundTag nbt = ItemStackHelper.getNBT(stack);
+          CompoundTag data = message.getData(nbt, true);
+          ListTag glOperationList = message.nbt.getList(message.nbtKey, ListTag.TAG_COMPOUND);
+          if (message.nbtKey.equals(NBTKeys.ARMOR_GL_OPERATIONS)) {
+            ListTag movingParts = data.getList(NBTKeys.ARMOR_PART_DATA, ListTag.TAG_LIST);
+            Tag nbtBase = movingParts.get(message.value);
+            if (nbtBase.getId() != ListTag.TAG_LIST) {
+              return;
+            }
+
+            ListTag itemList = (ListTag) nbtBase;
+            CompoundTag armorItemNbt = itemList.getCompound(message.armorItemIndex);
+            armorItemNbt.put(message.nbtKey, glOperationList);
+            itemList.set(message.armorItemIndex, armorItemNbt);
+            data.put(NBTKeys.ARMOR_PART_DATA, movingParts);
+          } else {
+            data.put(message.nbtKey, glOperationList);
+          }
+          message.finalizeDataChange(message, stack, nbt, data, true, false, false, -1);
+          ExtraBitManipulation.packetNetwork.sendTo(
+              new PacketChangeGlOperationList(message.nbt, message.nbtKey,
+                  message.armorType, message.indexArmorSet, message.value, message.armorItemIndex,
+                  message.selectedEntry, message.refreshLists, player), player);
+        }
+      });
+
+    }
   }
 
 }

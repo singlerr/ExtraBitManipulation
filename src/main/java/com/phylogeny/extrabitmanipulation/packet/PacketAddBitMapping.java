@@ -23,7 +23,7 @@ public class PacketAddBitMapping extends PacketBitMapIO {
       PacketType.create(new ResourceLocation(
           Reference.MOD_ID, "add_bit_mapping"), PacketAddBitMapping::new);
 
-  private BlockState state;
+  private final BlockState state;
   private IBitBrush bit;
 
   public PacketAddBitMapping(FriendlyByteBuf buf) {

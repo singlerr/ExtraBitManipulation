@@ -1,39 +1,35 @@
 package com.phylogeny.extrabitmanipulation.packet;
 
-import io.netty.buffer.ByteBuf;
+import net.fabricmc.fabric.api.networking.v1.FabricPacket;
 import net.minecraft.core.BlockPos;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.math.Vec3d;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.minecraft.core.Direction;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.phys.Vec3;
 
-public abstract class PacketBlockInteraction implements IMessage {
+public abstract class PacketBlockInteraction implements FabricPacket {
   protected BlockPos pos;
-  protected EnumFacing side;
-  protected Vec3d hit;
+  protected Direction side;
+  protected Vec3 hit;
 
-  public PacketBlockInteraction() {
+  public PacketBlockInteraction(FriendlyByteBuf buffer) {
+    pos = BlockPos.of(buffer.readLong());
+    side = Direction.from3DDataValue(buffer.readInt());
+    hit = new Vec3(buffer.readDouble(), buffer.readDouble(), buffer.readDouble());
   }
 
-  public PacketBlockInteraction(BlockPos pos, EnumFacing side, Vec3d hit) {
+  public PacketBlockInteraction(BlockPos pos, Direction side, Vec3 hit) {
     this.pos = pos;
     this.side = side;
     this.hit = hit;
   }
 
   @Override
-  public void toBytes(ByteBuf buffer) {
+  public void write(FriendlyByteBuf buffer) {
     buffer.writeLong(pos.asLong());
     buffer.writeInt(side.ordinal());
     buffer.writeDouble(hit.x);
     buffer.writeDouble(hit.y);
     buffer.writeDouble(hit.z);
-  }
-
-  @Override
-  public void fromBytes(ByteBuf buffer) {
-    pos = BlockPos.of(buffer.readLong());
-    side = EnumFacing.getFront(buffer.readInt());
-    hit = new Vec3d(buffer.readDouble(), buffer.readDouble(), buffer.readDouble());
   }
 
 }

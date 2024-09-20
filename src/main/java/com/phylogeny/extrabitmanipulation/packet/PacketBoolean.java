@@ -1,12 +1,13 @@
 package com.phylogeny.extrabitmanipulation.packet;
 
-import io.netty.buffer.ByteBuf;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
+import net.fabricmc.fabric.api.networking.v1.FabricPacket;
+import net.minecraft.network.FriendlyByteBuf;
 
-public abstract class PacketBoolean implements IMessage {
+public abstract class PacketBoolean implements FabricPacket {
   protected boolean value;
 
-  public PacketBoolean() {
+  public PacketBoolean(FriendlyByteBuf buf) {
+    value = buf.readBoolean();
   }
 
   public PacketBoolean(boolean value) {
@@ -14,13 +15,8 @@ public abstract class PacketBoolean implements IMessage {
   }
 
   @Override
-  public void toBytes(ByteBuf buffer) {
-    buffer.writeBoolean(value);
-  }
-
-  @Override
-  public void fromBytes(ByteBuf buffer) {
-    value = buffer.readBoolean();
+  public void write(FriendlyByteBuf buf) {
+    buf.writeBoolean(value);
   }
 
 }
