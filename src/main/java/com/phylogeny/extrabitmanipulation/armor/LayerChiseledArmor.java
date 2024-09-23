@@ -18,49 +18,41 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.model.ModelBase;
-import net.minecraft.client.model.ModelBiped;
-import net.minecraft.client.model.ModelIllager;
-import net.minecraft.client.model.ModelPlayer;
-import net.minecraft.client.model.ModelRenderer;
-import net.minecraft.client.model.ModelVex;
-import net.minecraft.client.model.ModelVillager;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.client.renderer.entity.RenderLivingBase;
+import net.minecraft.client.model.EntityModel;
+import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.model.PlayerModel;
+import net.minecraft.client.model.VexModel;
+import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
-import net.minecraft.client.renderer.texture.TextureMap;
-import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.monster.AbstractIllager;
-import net.minecraft.entity.monster.EntityZombieVillager;
-import net.minecraft.entity.passive.EntityVillager;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.EnumHandSide;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
-public class LayerChiseledArmor implements RenderLayer<EntityLivingBase> {
-  private final Map<NBTTagCompound, List<Integer>> movingPartsDisplayListsMap =
-      new HashMap<NBTTagCompound, List<Integer>>();
-  private ModelRenderer head, body, villagerArms, rightLeg, leftLeg, rightArm, leftArm;
-  private ModelBase model;
+public class LayerChiseledArmor implements RenderLayer<LivingEntity> {
+  private final Map<CompoundTag, List<Integer>> movingPartsDisplayListsMap =
+      new HashMap<CompoundTag, List<Integer>>();
+  private ModelPart head, body, villagerArms, rightLeg, leftLeg, rightArm, leftArm;
+  private EntityModel<?> model;
   private boolean smallArms, isIllager, isVex;
-  private final RenderLivingBase<? extends EntityLivingBase> livingEntityRenderer;
+  private final LivingEntityRenderer<?, ?> livingEntityRenderer;
 
-  public LayerChiseledArmor(RenderLivingBase<? extends EntityLivingBase> livingEntityRenderer) {
+  public LayerChiseledArmor(LivingEntityRenderer<?, ?> livingEntityRenderer) {
     this.livingEntityRenderer = livingEntityRenderer;
     updateModelAndRenderers(false);
   }
 
   public void updateModelAndRenderers(boolean force) {
-    ModelBase modelNew = livingEntityRenderer.getMainModel();
+    EntityModel<?> modelNew = livingEntityRenderer.getModel();
     if (!force && modelNew == model) {
       return;
     }
 
     model = modelNew;
-    if (model instanceof ModelVillager modelVillager) {
-      head = modelVillager.villagerHead;
-      body = modelVillager.villagerBody;
+   /* if (model instanceof VillagerModel<?> modelVillager) {
+      head = modelVillager.getHead();
+      body = ((VillagerModelAccessor) modelVillager).villagerBody;
       rightLeg = modelVillager.rightVillagerLeg;
       leftLeg = modelVillager.leftVillagerLeg;
       villagerArms = modelVillager.villagerArms;
@@ -73,20 +65,23 @@ public class LayerChiseledArmor implements RenderLayer<EntityLivingBase> {
       rightArm = modelIllager.rightArm;
       leftArm = modelIllager.leftArm;
       isIllager = true;
-    } else {
-      ModelBiped modelBiped = ((ModelBiped) model);
-      head = modelBiped.bipedHead;
-      body = modelBiped.bipedBody;
-      rightLeg = modelBiped.bipedRightLeg;
-      leftLeg = modelBiped.bipedLeftLeg;
-      rightArm = modelBiped.bipedRightArm;
-      leftArm = modelBiped.bipedLeftArm;
-      villagerArms = null;
-      if (model instanceof ModelPlayer) {
-        smallArms = ReflectionExtraBitManipulation.areArmsSmall((ModelPlayer) model);
+    } else */
+    {
+      if (model instanceof HumanoidModel) {
+        HumanoidModel<?> modelBiped = ((HumanoidModel<?>) model);
+        head = modelBiped.head;
+        body = modelBiped.body;
+        rightLeg = modelBiped.rightLeg;
+        leftLeg = modelBiped.leftLeg;
+        rightArm = modelBiped.rightArm;
+        leftArm = modelBiped.leftArm;
+        villagerArms = null;
+        if (model instanceof PlayerModel) {
+          smallArms = ReflectionExtraBitManipulation.areArmsSmall((PlayerModel<?>) model);
+        }
+      } else {
+        isVex = model instanceof VexModel;
       }
-
-      isVex = model instanceof ModelVex;
     }
   }
 
@@ -98,7 +93,7 @@ public class LayerChiseledArmor implements RenderLayer<EntityLivingBase> {
     movingPartsDisplayListsMap.clear();
   }
 
-  public void removeFromDisplayListsMap(NBTTagCompound nbt) {
+  public void removeFromDisplayListsMap(CompoundTag nbt) {
     deleteDisplayLists(movingPartsDisplayListsMap.remove(nbt));
   }
 
@@ -110,13 +105,13 @@ public class LayerChiseledArmor implements RenderLayer<EntityLivingBase> {
     }
   }
 
-  public static boolean isPlayerModelAlt(EntityLivingBase entity, float partialTicks) {
-    if (entity instanceof EntityPlayer ||
+  public static boolean isPlayerModelAlt(LivingEntity entity, float partialTicks) {
+    if (entity instanceof Player ||
         (!MorePlayerModelsReference.isLoaded && !CustomNPCsReferences.isLoaded)) {
       return false;
     }
 
-    EntityPlayer player = Minecraft.getMinecraft().player;
+    Player player = Minecraft.getInstance().player;
     return entity.prevPosX + (entity.posX - entity.prevPosX) * partialTicks ==
         player.prevPosX + (player.posX - player.prevPosX) * partialTicks
         && entity.prevPosY + (entity.posY - entity.prevPosY) * partialTicks ==
@@ -125,15 +120,16 @@ public class LayerChiseledArmor implements RenderLayer<EntityLivingBase> {
         player.prevPosZ + (player.posZ - player.prevPosZ) * partialTicks;
   }
 
+
   @Override
-  public void doRenderLayer(EntityLivingBase entity, float limbSwing, float limbSwingAmount,
+  public void doRenderLayer(LivingEntity entity, float limbSwing, float limbSwingAmount,
                             float partialTicks, float ageInTicks, float netHeadYaw, float headPitch,
                             float scale) {
     updateModelAndRenderers(false);
     GlStateManager.enableBlend();
     GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
     ClientHelper.bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
-    EntityLivingBase entityCap =
+    LivingEntity entityCap =
         isPlayerModelAlt(entity, partialTicks) ? Minecraft.getMinecraft().player : entity;
     IChiseledArmorSlotsHandler cap = entityCap instanceof EntityPlayer ?
         ChiseledArmorSlotsHandler.getCapability((EntityPlayer) entityCap) : null;
@@ -243,13 +239,13 @@ public class LayerChiseledArmor implements RenderLayer<EntityLivingBase> {
     GlStateManager.disableBlend();
   }
 
-  private List<Integer> getStackDisplayLists(EntityLivingBase entity, float scale,
+  private List<Integer> getStackDisplayLists(LivingEntity entity, float scale,
                                              ArmorType armorType) {
     return getDisplayLists(entity, scale, armorType,
         entity.getItemStackFromSlot(armorType.getEquipmentSlot()), null);
   }
 
-  private List<Integer> getSlotStackDisplayLists(EntityLivingBase entity, float scale,
+  private List<Integer> getSlotStackDisplayLists(LivingEntity entity, float scale,
                                                  IChiseledArmorSlotsHandler cap,
                                                  ArmorType armorType) {
     if (cap == null || !cap.hasArmor()) {
@@ -259,7 +255,7 @@ public class LayerChiseledArmor implements RenderLayer<EntityLivingBase> {
     return getDisplayLists(entity, scale, armorType, ItemStack.EMPTY, cap);
   }
 
-  private List<Integer> getDisplayLists(EntityLivingBase entity, float scale, ArmorType armorType,
+  private List<Integer> getDisplayLists(LivingEntity entity, float scale, ArmorType armorType,
                                         ItemStack stack, @Nullable IChiseledArmorSlotsHandler cap) {
     List<Integer> displayLists = null;
     int countSet = cap == null ? 1 : ChiseledArmorSlotsHandler.COUNT_SETS;
@@ -272,8 +268,8 @@ public class LayerChiseledArmor implements RenderLayer<EntityLivingBase> {
         stack = cap.getStackInSlot(i * ChiseledArmorSlotsHandler.COUNT_TYPES + armorType.ordinal());
       }
       if (stack.hasTagCompound() && stack.getItem() instanceof ItemChiseledArmor) {
-        NBTTagCompound nbt = stack.getTagCompound();
-        NBTTagCompound armoreData = ItemStackHelper.getArmorData(nbt);
+        CompoundTag nbt = stack.getTagCompound();
+        CompoundTag armoreData = ItemStackHelper.getArmorData(nbt);
         if (!armoreData.getBoolean(NBTKeys.ARMOR_NOT_EMPTY)) {
           continue;
         }
@@ -293,7 +289,7 @@ public class LayerChiseledArmor implements RenderLayer<EntityLivingBase> {
     return displayLists;
   }
 
-  private void adjustForSneaking(EntityLivingBase entity) {
+  private void adjustForSneaking(LivingEntity entity) {
     if (entity.isSneaking()) {
       GlStateManager.translate(0.0F, 0.2F, 0.0F);
     }
@@ -306,8 +302,8 @@ public class LayerChiseledArmor implements RenderLayer<EntityLivingBase> {
     }
   }
 
-  private List<Integer> addMovingPartsDisplayListsToMap(EntityLivingBase entity, float scale,
-                                                        NBTTagCompound armorNbt,
+  private List<Integer> addMovingPartsDisplayListsToMap(LivingEntity entity, float scale,
+                                                        CompoundTag armorNbt,
                                                         ArmorType armorType) {
     List<Integer> movingPartsDisplayLists = new ArrayList<>();
     for (int i = 0; i < armorType.getMovingpartCount(); i++) {

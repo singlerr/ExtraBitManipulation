@@ -1,6 +1,14 @@
 accessWidener v2 named
+accessible method net/minecraft/client/particle/SplashParticle <init> (Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDD)V
+accessible method net/minecraft/client/renderer/block/model/ItemOverrides <init> ()V
+extendable class net/minecraft/client/model/geom/ModelPart
+mutable field net/minecraft/client/model/HumanoidModel head Lnet/minecraft/client/model/geom/ModelPart;
+mutable field net/minecraft/world/inventory/Slot slot I
 mutable field net/minecraft/world/inventory/Slot x I
 mutable field net/minecraft/world/inventory/Slot y I
-mutable field net/minecraft/world/inventory/Slot slot I
-extendable class net/minecraft/client/model/geom/ModelPart
-accessible method net/minecraft/client/particle/SplashParticle <init> (Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDD)V
+mutable field net/minecraft/client/model/HumanoidModel hat Lnet/minecraft/client/model/geom/ModelPart;
+mutable field net/minecraft/client/model/HumanoidModel body Lnet/minecraft/client/model/geom/ModelPart;
+mutable field net/minecraft/client/model/HumanoidModel rightArm Lnet/minecraft/client/model/geom/ModelPart;
+mutable field net/minecraft/client/model/HumanoidModel leftArm Lnet/minecraft/client/model/geom/ModelPart;
+mutable field net/minecraft/client/model/HumanoidModel rightLeg Lnet/minecraft/client/model/geom/ModelPart;
+mutable field net/minecraft/client/model/HumanoidModel leftLeg Lnet/minecraft/client/model/geom/ModelPart;

@@ -2,10 +2,9 @@ package com.phylogeny.extrabitmanipulation.armor;
 
 import com.phylogeny.extrabitmanipulation.reference.NBTKeys;
 import java.util.List;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
-import net.minecraftforge.common.util.Constants.NBT;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import org.lwjgl.opengl.GL11;
 
 public class GlOperation {
   private final GlOperationType type;
@@ -43,8 +42,8 @@ public class GlOperation {
     this.angle = angle;
   }
 
-  public GlOperation(NBTTagCompound nbt) {
-    type = GlOperationType.values()[nbt.getInteger(NBTKeys.ARMOR_GL_OPERATION_TYPE)];
+  public GlOperation(CompoundTag nbt) {
+    type = GlOperationType.values()[nbt.getInt(NBTKeys.ARMOR_GL_OPERATION_TYPE)];
     x = nbt.getFloat(NBTKeys.ARMOR_GL_OPERATION_X);
     y = nbt.getFloat(NBTKeys.ARMOR_GL_OPERATION_Y);
     z = nbt.getFloat(NBTKeys.ARMOR_GL_OPERATION_Z);
@@ -70,13 +69,13 @@ public class GlOperation {
   public void execute() {
     switch (type) {
       case TRANSLATION:
-        GlStateManager.translate(x, y, z);
+        GL11.glTranslatef(x, y, z);
         break;
       case ROTATION:
-        GlStateManager.rotate(angle, x, y, z);
+        GL11.glRotatef(angle, x, y, z);
         break;
       case SCALE:
-        GlStateManager.scale(x, y, z);
+        GL11.glScalef(x, y, z);
     }
   }
 
@@ -86,30 +85,30 @@ public class GlOperation {
     }
   }
 
-  public void saveToNBT(NBTTagCompound nbt) {
-    nbt.setInteger(NBTKeys.ARMOR_GL_OPERATION_TYPE, type.ordinal());
-    nbt.setFloat(NBTKeys.ARMOR_GL_OPERATION_X, x);
-    nbt.setFloat(NBTKeys.ARMOR_GL_OPERATION_Y, y);
-    nbt.setFloat(NBTKeys.ARMOR_GL_OPERATION_Z, z);
-    nbt.setFloat(NBTKeys.ARMOR_GL_OPERATION_ANGLE, angle);
+  public void saveToNBT(CompoundTag nbt) {
+    nbt.putInt(NBTKeys.ARMOR_GL_OPERATION_TYPE, type.ordinal());
+    nbt.putFloat(NBTKeys.ARMOR_GL_OPERATION_X, x);
+    nbt.putFloat(NBTKeys.ARMOR_GL_OPERATION_Y, y);
+    nbt.putFloat(NBTKeys.ARMOR_GL_OPERATION_Z, z);
+    nbt.putFloat(NBTKeys.ARMOR_GL_OPERATION_ANGLE, angle);
   }
 
-  public static void saveListToNBT(NBTTagCompound nbt, String key, List<GlOperation> glOperations) {
-    NBTTagList glOperationsNbt = new NBTTagList();
+  public static void saveListToNBT(CompoundTag nbt, String key, List<GlOperation> glOperations) {
+    ListTag glOperationsNbt = new ListTag();
     for (GlOperation glOperation : glOperations) {
-      NBTTagCompound glOperationNbt = new NBTTagCompound();
+      CompoundTag glOperationNbt = new CompoundTag();
       glOperation.saveToNBT(glOperationNbt);
-      glOperationsNbt.appendTag(glOperationNbt);
+      glOperationsNbt.add(glOperationNbt);
     }
-    nbt.setTag(key, glOperationsNbt);
+    nbt.put(key, glOperationsNbt);
   }
 
-  public static void loadListFromNBT(NBTTagCompound nbt, String key,
+  public static void loadListFromNBT(CompoundTag nbt, String key,
                                      List<GlOperation> glOperations) {
     glOperations.clear();
-    NBTTagList glOperationsNbt = nbt.getTagList(key, NBT.TAG_COMPOUND);
-    for (int i = 0; i < glOperationsNbt.tagCount(); i++) {
-      glOperations.add(new GlOperation(glOperationsNbt.getCompoundTagAt(i)));
+    ListTag glOperationsNbt = nbt.getList(key, ListTag.TAG_COMPOUND);
+    for (int i = 0; i < glOperationsNbt.size(); i++) {
+      glOperations.add(new GlOperation(glOperationsNbt.getCompound(i)));
     }
   }
 

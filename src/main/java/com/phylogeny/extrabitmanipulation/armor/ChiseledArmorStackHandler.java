@@ -16,10 +16,13 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import mod.chiselsandbits.client.model.baked.BaseBakedPerspectiveModel;
 import mod.chiselsandbits.client.model.baked.TransformTypeDependentItemBakedModel;
-import net.minecraft.client.Minecraft;
+import mod.chiselsandbits.utils.TransformationUtils;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.ItemOverrides;
+import net.minecraft.client.renderer.block.model.ItemTransform;
+import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.Direction;
@@ -29,19 +32,22 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joml.AxisAngle4f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 
-public class ChiseledArmorStackHandeler implements TransformTypeDependentItemBakedModel {
+public class ChiseledArmorStackHandler extends ItemOverrides {
   private static final Map<CompoundTag, BakedModel> movingPartsModelMap =
       new HashMap<>();
 
   private final RandomSource RANDOM = RandomSource.create(0L);
 
-  public ChiseledArmorStackHandeler() {
+  public ChiseledArmorStackHandler() {
+    super();
 
   }
 
@@ -50,8 +56,16 @@ public class ChiseledArmorStackHandeler implements TransformTypeDependentItemBak
   }
 
   public static void removeFromModelMap(CompoundTag nbt) {
-
     movingPartsModelMap.remove(nbt);
+  }
+
+  @Override
+  public @org.jetbrains.annotations.Nullable BakedModel resolve(BakedModel bakedModel,
+                                                                ItemStack itemStack,
+                                                                @org.jetbrains.annotations.Nullable ClientLevel clientLevel,
+                                                                @org.jetbrains.annotations.Nullable LivingEntity livingEntity,
+                                                                int i) {
+    return handleItemState(bakedModel, itemStack, clientLevel, livingEntity);
   }
 
   private BakedModel handleItemState(BakedModel originalModel, ItemStack stack,
@@ -92,8 +106,9 @@ public class ChiseledArmorStackHandeler implements TransformTypeDependentItemBak
               }
 
               glOperationsItem = armorItem.getGlOperations();
-              model = ClientHelper.getRenderItem()
-                  .getItemModelWithOverrides(armorItem.getStack(), null, ClientHelper.getPlayer());
+              model = ClientHelper.getRenderItem().getItemModelShaper()
+                  .getItemModel(armorItem.getStack());
+//                  .getItemModelWithOverrides(armorItem.getStack(), null, ClientHelper.getPlayer());
               Matrix4f matrix = generateMatrix(glOperationsPre, glOperationsItem, glOperationsPost);
               try {
                 for (BakedQuad quad : model.getQuads(null, null, 0L)) {
@@ -197,7 +212,7 @@ public class ChiseledArmorStackHandeler implements TransformTypeDependentItemBak
   private void scaleAndCenterQuad(BakedQuad quad, float scale, float translationX,
                                   float translationY, float translationZ) {
     int size = quad.getFormat().getIntegerSize();
-    int[] data = quad.getVertexData();
+    int[] data = quad.getVertices();
     for (int i = 0; i < 4; i++) {
       int index = size * i;
       data[index] =
@@ -213,7 +228,7 @@ public class ChiseledArmorStackHandeler implements TransformTypeDependentItemBak
                                           float[] bounds, float scale, float offsetX, float offsetY,
                                           Matrix4f matrix) {
     int size = quad.getFormat().getIntegerSize();
-    int[] data = quad.getVertexData().clone();
+    int[] data = quad.getVertices().clone();
     float x, y, z;
     Vector4f vec;
     int index;
@@ -256,15 +271,10 @@ public class ChiseledArmorStackHandeler implements TransformTypeDependentItemBak
       data[index + 2] = Float.floatToRawIntBits(z);
     }
     return new BakedQuad(data, quad.getTintIndex() == -1 ? -1 :
-        ClientHelper.getItemColors().getColorFromItemstack(stack, quad.getTintIndex()),
-        facing, quad.getSprite(), quad.shouldApplyDiffuseLighting(), quad.getFormat());
+        ClientHelper.getItemColors().getColor(stack, quad.getTintIndex()),
+        facing, quad.getSprite(), quad.isShade(), quad.getFormat());
   }
 
-  @Override
-  public BakedModel applyTransform(ItemDisplayContext context, PoseStack poseStack,
-                                   boolean leftHand) {
-    return null;
-  }
 
   public static class ChiseledArmorBakedModel extends BaseBakedPerspectiveModel {
     private static Matrix4f ground, fixed;
@@ -279,34 +289,87 @@ public class ChiseledArmorStackHandeler implements TransformTypeDependentItemBak
     }
 
     public ChiseledArmorBakedModel() {
-      overrides = new ChiseledArmorStackHandeler();
+      overrides = new ChiseledArmorStackHandler();
       if (ground == null) {
-        ground = createMatrix(TransformType.GROUND);
-        fixed = createMatrix(TransformType.FIXED);
+        ground = createMatrix(ItemDisplayContext.GROUND);
+        fixed = createMatrix(ItemDisplayContext.FIXED);
       }
     }
 
-    private Matrix4f createMatrix(TransformType transformType) {
+    private Matrix4f createMatrix(ItemDisplayContext transformType) {
       Matrix4f matrix = new Matrix4f();
-      matrix.set(1.35F);
+      matrix.scale(1.35F);
       matrix.mul(handlePerspective(transformType).getRight());
       return matrix;
     }
 
     @Override
-    public Pair<? extends IBakedModel, Matrix4f> handlePerspective(
-        TransformType cameraTransformType) {
-      if (ground != null && fixed != null && (cameraTransformType == TransformType.GROUND ||
-          cameraTransformType == TransformType.FIXED)) {
-        return new ImmutablePair<IBakedModel, Matrix4f>(this,
-            cameraTransformType == TransformType.GROUND ? ground : fixed);
+    public ItemOverrides getOverrides() {
+      return overrides;
+    }
+
+    public Pair<? extends BakedModel, Matrix4f> handlePerspective(
+        ItemDisplayContext cameraTransformType) {
+      if (ground != null && fixed != null && (cameraTransformType == ItemDisplayContext.GROUND ||
+          cameraTransformType == ItemDisplayContext.FIXED)) {
+        return new ImmutablePair<BakedModel, Matrix4f>(this,
+            cameraTransformType == ItemDisplayContext.GROUND ? ground : fixed);
       }
 
-      return super.handlePerspective(cameraTransformType);
+      return null;
     }
 
     @Override
-    public boolean isAmbientOcclusion() {
+    public BakedModel applyTransform(ItemDisplayContext context, PoseStack poseStack,
+                                     boolean leftHand) {
+
+      Pair<? extends BakedModel, Matrix4f> t = handlePerspective(context);
+      if (t == null) {
+        return super.applyTransform(context, poseStack, leftHand);
+      }
+
+      switch (context) {
+        case GROUND:
+          TransformationUtils.push(poseStack, ground, leftHand);
+          return this;
+        case FIRST_PERSON_RIGHT_HAND:
+          TransformationUtils.push(poseStack, firstPerson_righthand, leftHand);
+          return this;
+        case THIRD_PERSON_LEFT_HAND:
+          TransformationUtils.push(poseStack, thirdPerson_lefthand, leftHand);
+          return this;
+        case THIRD_PERSON_RIGHT_HAND:
+          TransformationUtils.push(poseStack, thirdPerson_righthand, leftHand);
+        case FIXED:
+          TransformationUtils.push(poseStack, firstPerson_righthand, leftHand);
+          return this;
+        case GROUND:
+          TransformationUtils.push(poseStack, ground, leftHand);
+          return this;
+        case GUI:
+          TransformationUtils.push(poseStack, gui, leftHand);
+          return this;
+        default:
+      }
+
+      TransformationUtils.push(poseStack, fixed, leftHand);
+      return this;
+    }
+
+    @Override
+    public ItemTransforms getTransforms() {
+      return new PerspectiveItemModelDelegate(this);
+    }
+
+    @Override
+    public List<BakedQuad> getQuads(@org.jetbrains.annotations.Nullable BlockState blockState,
+                                    @org.jetbrains.annotations.Nullable Direction direction,
+                                    RandomSource randomSource) {
+      return List.of();
+    }
+
+    @Override
+    public boolean useAmbientOcclusion() {
       return true;
     }
 
@@ -316,18 +379,18 @@ public class ChiseledArmorStackHandeler implements TransformTypeDependentItemBak
     }
 
     @Override
-    public boolean isBuiltInRenderer() {
+    public boolean usesBlockLight() {
       return false;
     }
 
     @Override
-    public TextureAtlasSprite getParticleTexture() {
-      return Minecraft.getMinecraft().getTextureMapBlocks().getMissingSprite();
+    public boolean isCustomRenderer() {
+      return false;
     }
 
     @Override
-    public ItemCameraTransforms getItemCameraTransforms() {
-      return ItemCameraTransforms.DEFAULT;
+    public TextureAtlasSprite getParticleIcon() {
+      return null;
     }
 
     @Override
@@ -337,11 +400,34 @@ public class ChiseledArmorStackHandeler implements TransformTypeDependentItemBak
           (side != null ? face[side.ordinal()] : generic);
     }
 
-    @Override
-    public ItemOverrideList getOverrides() {
-      return overrides;
+  }
+
+  private static final class PerspectiveItemModelDelegate extends ItemTransforms {
+
+    private final TransformTypeDependentItemBakedModel delegate;
+
+    public PerspectiveItemModelDelegate(TransformTypeDependentItemBakedModel delegate) {
+      super(
+          ItemTransform.NO_TRANSFORM,
+          ItemTransform.NO_TRANSFORM,
+          ItemTransform.NO_TRANSFORM,
+          ItemTransform.NO_TRANSFORM,
+          ItemTransform.NO_TRANSFORM,
+          ItemTransform.NO_TRANSFORM,
+          ItemTransform.NO_TRANSFORM,
+          ItemTransform.NO_TRANSFORM);
+      this.delegate = delegate;
     }
 
+    @Override
+    public ItemTransform getTransform(ItemDisplayContext itemDisplayContext) {
+      return new ItemTransform(new Vector3f(), new Vector3f(), new Vector3f()) {
+        @Override
+        public void apply(boolean bl, PoseStack poseStack) {
+          delegate.applyTransform(itemDisplayContext, poseStack, bl);
+        }
+      };
+    }
   }
 
   public enum ArmorStackModelRenderMode {

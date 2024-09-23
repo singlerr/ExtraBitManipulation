@@ -1,6 +1,6 @@
 package com.phylogeny.extrabitmanipulation.reference;
 
-import com.phylogeny.extrabitmanipulation.armor.ChiseledArmorStackHandeler.ArmorStackModelRenderMode;
+import com.phylogeny.extrabitmanipulation.armor.ChiseledArmorStackHandler.ArmorStackModelRenderMode;
 import com.phylogeny.extrabitmanipulation.armor.capability.ChiseledArmorSlotsEventHandler.ArmorButtonVisibiltyMode;
 import com.phylogeny.extrabitmanipulation.config.ConfigBitStack;
 import com.phylogeny.extrabitmanipulation.config.ConfigBitToolSettingBoolean;

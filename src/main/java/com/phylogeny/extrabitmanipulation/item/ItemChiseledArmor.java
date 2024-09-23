@@ -63,7 +63,7 @@ public class ItemChiseledArmor extends ArmorItem {
   public static final String[] SCALE_TITLES = new String[] {"1:1", "1:2", "1:4"};
   public final ArmorMovingPart[] MOVING_PARTS;
   public final String[] MOVING_PART_TITLES;
-  public final ArmorItem.Type armorType;
+  public final ArmorType armorType;
   @Environment(EnvType.CLIENT)
   private ModelResourceLocation itemModelLocation;
 
@@ -76,7 +76,7 @@ public class ItemChiseledArmor extends ArmorItem {
     super(material, Type.valueOf(armorType.name()), properties);
 //    setCreativeTab(CreativeTabExtraBitManipulation.CREATIVE_TAB);
     registryName = new ResourceLocation(Reference.MOD_ID, name);
-    this.armorType = Type.valueOf(armorType.name());
+    this.armorType = armorType;
     MOVING_PARTS = movingParts;
     MOVING_PART_TITLES = new String[MOVING_PARTS.length];
     for (int i = 0; i < MOVING_PARTS.length; i++) {

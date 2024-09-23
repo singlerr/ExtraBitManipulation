@@ -43,7 +43,7 @@ public class BitInventoryHelper {
 
   @Nullable
   private static IItemHandler getItemHandler(ItemStack stack) {
-    return stack.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, null);
+    return stack.getCapability(CapabilityItemHandler.ITEM_HANDLER_CAPABILITY, null).orElse(null);
   }
 
   public static Map<Integer, Integer> getInventoryBitCounts(IChiselAndBitsAPI api,

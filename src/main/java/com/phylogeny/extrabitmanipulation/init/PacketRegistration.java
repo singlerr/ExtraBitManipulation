@@ -1,6 +1,5 @@
 package com.phylogeny.extrabitmanipulation.init;
 
-import com.phylogeny.extrabitmanipulation.ExtraBitManipulation;
 import com.phylogeny.extrabitmanipulation.packet.PacketAddBitMapping;
 import com.phylogeny.extrabitmanipulation.packet.PacketBitMappingsPerTool;
 import com.phylogeny.extrabitmanipulation.packet.PacketBitParticles;
@@ -43,87 +42,101 @@ import com.phylogeny.extrabitmanipulation.packet.PacketSetWrechMode;
 import com.phylogeny.extrabitmanipulation.packet.PacketSyncArmorSlot;
 import com.phylogeny.extrabitmanipulation.packet.PacketThrowBit;
 import com.phylogeny.extrabitmanipulation.packet.PacketUseWrench;
+import java.lang.reflect.InvocationTargetException;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.networking.v1.FabricPacket;
+import net.fabricmc.fabric.api.networking.v1.PacketType;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 
 public class PacketRegistration {
   public static int packetId = 0;
 
-  public enum Side {
-    CLIENT, SERVER, BOTH
-  }
 
   public static void registerPackets() {
-    registerPacket(PacketCycleBitWrenchMode.Handler.class, PacketCycleBitWrenchMode.class,
-        Side.SERVER);
-    registerPacket(PacketSculpt.Handler.class, PacketSculpt.class, Side.SERVER);
-    registerPacket(PacketSetDirection.Handler.class, PacketSetDirection.class, Side.SERVER);
-    registerPacket(PacketSetShapeType.Handler.class, PacketSetShapeType.class, Side.SERVER);
-    registerPacket(PacketSetTargetBitGridVertexes.Handler.class,
-        PacketSetTargetBitGridVertexes.class, Side.SERVER);
-    registerPacket(PacketSetSemiDiameter.Handler.class, PacketSetSemiDiameter.class, Side.SERVER);
-    registerPacket(PacketSetHollowShape.Handler.class, PacketSetHollowShape.class, Side.SERVER);
-    registerPacket(PacketSetEndsOpen.Handler.class, PacketSetEndsOpen.class, Side.SERVER);
-    registerPacket(PacketSetWallThickness.Handler.class, PacketSetWallThickness.class, Side.SERVER);
-    registerPacket(PacketSetBitStack.Handler.class, PacketSetBitStack.class, Side.SERVER);
-    registerPacket(PacketSetSculptMode.Handler.class, PacketSetSculptMode.class, Side.SERVER);
-    registerPacket(PacketSetModelAreaMode.Handler.class, PacketSetModelAreaMode.class, Side.SERVER);
-    registerPacket(PacketSetModelSnapMode.Handler.class, PacketSetModelSnapMode.class, Side.SERVER);
-    registerPacket(PacketSetModelGuiOpen.Handler.class, PacketSetModelGuiOpen.class, Side.SERVER);
-    registerPacket(PacketAddBitMapping.Handler.class, PacketAddBitMapping.class, Side.SERVER);
-    registerPacket(PacketCursorStack.Handler.class, PacketCursorStack.class, Side.SERVER);
-    registerPacket(PacketSetTabAndStateBlockButton.Handler.class,
-        PacketSetTabAndStateBlockButton.class, Side.SERVER);
-    registerPacket(PacketReadBlockStates.Handler.class, PacketReadBlockStates.class, Side.SERVER);
-    registerPacket(PacketCreateModel.Handler.class, PacketCreateModel.class, Side.SERVER);
-    registerPacket(PacketUseWrench.Handler.class, PacketUseWrench.class, Side.SERVER);
-    registerPacket(PacketBitMappingsPerTool.Handler.class, PacketBitMappingsPerTool.class,
-        Side.SERVER);
-    registerPacket(PacketClearStackBitMappings.Handler.class, PacketClearStackBitMappings.class,
-        Side.SERVER);
-    registerPacket(PacketOverwriteStackBitMappings.Handler.class,
-        PacketOverwriteStackBitMappings.class, Side.SERVER);
-    registerPacket(PacketOpenBitMappingGui.Handler.class, PacketOpenBitMappingGui.class,
-        Side.SERVER);
-    registerPacket(PacketSetWrechMode.Handler.class, PacketSetWrechMode.class, Side.SERVER);
-    registerPacket(PacketSetDesign.Handler.class, PacketSetDesign.class, Side.SERVER);
-    registerPacket(PacketThrowBit.Handler.class, PacketThrowBit.class, Side.SERVER);
-    registerPacket(PacketBitParticles.Handler.class, PacketBitParticles.class, Side.CLIENT);
-    registerPacket(PacketPlaceEntityBit.Handler.class, PacketPlaceEntityBit.class, Side.CLIENT);
-    registerPacket(PacketSetArmorMode.Handler.class, PacketSetArmorMode.class, Side.SERVER);
-    registerPacket(PacketSetArmorScale.Handler.class, PacketSetArmorScale.class, Side.SERVER);
-    registerPacket(PacketSetTargetArmorBits.Handler.class, PacketSetTargetArmorBits.class,
-        Side.SERVER);
-    registerPacket(PacketSetArmorMovingPart.Handler.class, PacketSetArmorMovingPart.class,
-        Side.SERVER);
-    registerPacket(PacketSetCollectionBox.Handler.class, PacketSetCollectionBox.class, Side.SERVER);
-    registerPacket(PacketCreateBodyPartTemplate.Handler.class, PacketCreateBodyPartTemplate.class,
-        Side.SERVER);
-    registerPacket(PacketCollectArmorBlocks.Handler.class, PacketCollectArmorBlocks.class,
-        Side.SERVER);
-    registerPacket(PacketOpenChiseledArmorGui.Handler.class, PacketOpenChiseledArmorGui.class,
-        Side.SERVER);
-    registerPacket(PacketChangeGlOperationList.Handler.class, PacketChangeGlOperationList.class,
-        Side.BOTH);
-    registerPacket(PacketChangeArmorItemList.Handler.class, PacketChangeArmorItemList.class,
-        Side.BOTH);
-    registerPacket(PacketSyncArmorSlot.Handler.class, PacketSyncArmorSlot.class, Side.CLIENT);
-    registerPacket(PacketOpenInventoryGui.Handler.class, PacketOpenInventoryGui.class, Side.SERVER);
-    registerPacket(PacketSetModelPartConcealed.Handler.class, PacketSetModelPartConcealed.class,
-        Side.SERVER);
+    registerServerPacket(PacketCycleBitWrenchMode.PACKET_TYPE,
+        PacketCycleBitWrenchMode.Handler.class);
+    registerServerPacket(PacketSculpt.PACKET_TYPE, PacketSculpt.Handler.class);
+    registerServerPacket(PacketSetDirection.PACKET_TYPE, PacketSetDirection.Handler.class);
+    registerServerPacket(PacketSetShapeType.PACKET_TYPE, PacketSetShapeType.Handler.class);
+    registerServerPacket(PacketSetTargetBitGridVertexes.PACKET_TYPE,
+        PacketSetTargetBitGridVertexes.Handler.class);
+    registerServerPacket(PacketSetSemiDiameter.PACKET_TYPE, PacketSetSemiDiameter.Handler.class);
+    registerServerPacket(PacketSetHollowShape.PACKET_TYPE, PacketSetHollowShape.Handler.class);
+    registerServerPacket(PacketSetEndsOpen.PACKET_TYPE, PacketSetEndsOpen.Handler.class);
+    registerServerPacket(PacketSetWallThickness.PACKET_TYPE, PacketSetWallThickness.Handler.class);
+    registerServerPacket(PacketSetBitStack.PACKET_TYPE, PacketSetBitStack.Handler.class);
+    registerServerPacket(PacketSetSculptMode.PACKET_TYPE, PacketSetSculptMode.Handler.class);
+    registerServerPacket(PacketSetModelAreaMode.PACKET_TYPE, PacketSetModelAreaMode.Handler.class);
+    registerServerPacket(PacketSetModelSnapMode.PACKET_TYPE, PacketSetModelSnapMode.Handler.class);
+    registerServerPacket(PacketSetModelGuiOpen.PACKET_TYPE, PacketSetModelGuiOpen.Handler.class);
+    registerServerPacket(PacketAddBitMapping.PACKET_TYPE, PacketAddBitMapping.Handler.class);
+    registerServerPacket(PacketCursorStack.PACKET_TYPE, PacketCursorStack.Handler.class);
+    registerServerPacket(PacketSetTabAndStateBlockButton.PACKET_TYPE,
+        PacketSetTabAndStateBlockButton.Handler.class);
+    registerServerPacket(PacketReadBlockStates.PACKET_TYPE, PacketReadBlockStates.Handler.class);
+    registerServerPacket(PacketCreateModel.PACKET_TYPE, PacketCreateModel.Handler.class);
+    registerServerPacket(PacketUseWrench.PACKET_TYPE, PacketUseWrench.Handler.class);
+    registerServerPacket(PacketBitMappingsPerTool.PACKET_TYPE,
+        PacketBitMappingsPerTool.Handler.class);
+    registerServerPacket(PacketClearStackBitMappings.PACKET_TYPE,
+        PacketClearStackBitMappings.Handler.class);
+    registerServerPacket(PacketOverwriteStackBitMappings.PACKET_TYPE,
+        PacketOverwriteStackBitMappings.Handler.class);
+    registerServerPacket(PacketOpenBitMappingGui.PACKET_TYPE,
+        PacketOpenBitMappingGui.Handler.class);
+    registerServerPacket(PacketSetWrechMode.PACKET_TYPE, PacketSetWrechMode.Handler.class);
+    registerServerPacket(PacketSetDesign.PACKET_TYPE, PacketSetDesign.Handler.class);
+    registerServerPacket(PacketThrowBit.PACKET_TYPE, PacketThrowBit.Handler.class);
+    registerClientPacket(PacketBitParticles.PACKET_TYPE, PacketBitParticles.Handler.class);
+    registerClientPacket(PacketPlaceEntityBit.PACKET_TYPE, PacketPlaceEntityBit.Handler.class);
+    registerServerPacket(PacketSetArmorMode.PACKET_TYPE, PacketSetArmorMode.Handler.class);
+    registerServerPacket(PacketSetArmorScale.PACKET_TYPE, PacketSetArmorScale.Handler.class);
+    registerServerPacket(PacketSetTargetArmorBits.PACKET_TYPE,
+        PacketSetTargetArmorBits.Handler.class);
+    registerServerPacket(PacketSetArmorMovingPart.PACKET_TYPE,
+        PacketSetArmorMovingPart.Handler.class);
+    registerServerPacket(PacketSetCollectionBox.PACKET_TYPE, PacketSetCollectionBox.Handler.class);
+    registerServerPacket(PacketCreateBodyPartTemplate.PACKET_TYPE,
+        PacketCreateBodyPartTemplate.Handler.class);
+    registerServerPacket(PacketCollectArmorBlocks.PACKET_TYPE,
+        PacketCollectArmorBlocks.Handler.class);
+    registerServerPacket(PacketOpenChiseledArmorGui.PACKET_TYPE,
+        PacketOpenChiseledArmorGui.Handler.class);
+    registerClientPacket(PacketChangeGlOperationList.PACKET_TYPE,
+        PacketChangeGlOperationList.ClientHandler.class);
+    registerServerPacket(PacketChangeGlOperationList.PACKET_TYPE,
+        PacketChangeGlOperationList.ServerHandler.class);
+    registerClientPacket(PacketChangeArmorItemList.PACKET_TYPE,
+        PacketChangeArmorItemList.ClientHandler.class);
+    registerServerPacket(PacketChangeArmorItemList.PACKET_TYPE,
+        PacketChangeArmorItemList.ServerHandler.class);
+    registerClientPacket(PacketSyncArmorSlot.PACKET_TYPE, PacketSyncArmorSlot.Handler.class);
+    registerServerPacket(PacketOpenInventoryGui.PACKET_TYPE, PacketOpenInventoryGui.Handler.class);
+    registerServerPacket(PacketSetModelPartConcealed.PACKET_TYPE,
+        PacketSetModelPartConcealed.Handler.class);
   }
 
-  private static void registerPacket(Class handler, Class packet, Side side) {
-    if (side != Side.CLIENT) {
-      registerPacket(handler, packet, net.minecraftforge.fml.relauncher.Side.SERVER);
+  private static <T extends FabricPacket, H extends ServerPlayNetworking.PlayPacketHandler<T>> void registerServerPacket(
+      PacketType<T> packetType, Class<H> handler) {
+    try {
+      ServerPlayNetworking.registerGlobalReceiver(packetType,
+          handler.getConstructor().newInstance());
+    } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+             NoSuchMethodException e) {
+      throw new RuntimeException(e);
     }
+  }
 
-    if (side != Side.SERVER) {
-      registerPacket(handler, packet, net.minecraftforge.fml.relauncher.Side.CLIENT);
+  private static <T extends FabricPacket, H extends ClientPlayNetworking.PlayPacketHandler<T>> void registerClientPacket(
+      PacketType<T> packetType, Class<H> handler) {
+    try {
+      ClientPlayNetworking.registerGlobalReceiver(packetType,
+          handler.getConstructor().newInstance());
+    } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+             NoSuchMethodException e) {
+      throw new RuntimeException(e);
     }
   }
 
-  private static void registerPacket(Class handler, Class packet,
-                                     net.minecraftforge.fml.relauncher.Side side) {
-    ExtraBitManipulation.packetNetwork.registerMessage(handler, packet, packetId++, side);
-  }
 
 }

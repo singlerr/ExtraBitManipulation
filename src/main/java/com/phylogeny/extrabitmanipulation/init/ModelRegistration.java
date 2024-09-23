@@ -1,34 +1,32 @@
 package com.phylogeny.extrabitmanipulation.init;
 
-import com.phylogeny.extrabitmanipulation.armor.ChiseledArmorStackHandeler.ChiseledArmorBakedModel;
+import com.phylogeny.extrabitmanipulation.armor.ChiseledArmorStackHandler.ChiseledArmorBakedModel;
 import com.phylogeny.extrabitmanipulation.armor.model.vanilla.ModelChiseledArmor;
 import com.phylogeny.extrabitmanipulation.armor.model.vanilla.ModelChiseledArmorLeggings;
 import com.phylogeny.extrabitmanipulation.block.BlockExtraBitManipulationBase;
+import com.phylogeny.extrabitmanipulation.extension.ModelPartExtension;
 import com.phylogeny.extrabitmanipulation.helper.ItemStackHelper;
 import com.phylogeny.extrabitmanipulation.item.ItemChiseledArmor;
 import com.phylogeny.extrabitmanipulation.item.ItemChiseledArmor.ArmorMovingPart;
 import com.phylogeny.extrabitmanipulation.item.ItemExtraBitManipulationBase;
 import com.phylogeny.extrabitmanipulation.reference.Configs;
-import com.phylogeny.extrabitmanipulation.reference.CustomNPCsReferences;
 import com.phylogeny.extrabitmanipulation.reference.MorePlayerModelsReference;
 import com.phylogeny.extrabitmanipulation.reference.Reference;
+import java.util.Collections;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelModifier;
 import net.minecraft.client.model.HumanoidModel;
-import net.minecraft.client.model.ModelBiped;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.inventory.EntityEquipmentSlot;
-import net.minecraft.item.ItemArmor.ArmorMaterial;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ArmorMaterials;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
-import net.minecraftforge.client.model.ModelLoader;
 import org.jetbrains.annotations.Nullable;
 
 public class ModelRegistration implements ModelLoadingPlugin {
@@ -36,35 +34,37 @@ public class ModelRegistration implements ModelLoadingPlugin {
       Reference.MOD_ID + ":textures/armor/chiseled_armor_diamond.png";
   private static final String ARMOR_TEXTURE_PATH_IRON =
       Reference.MOD_ID + ":textures/armor/chiseled_armor_iron.png";
-  private static ModelPart armorModelEmpty, armorModel, armorModelLeggings, armorModelMPM,
+  private static HumanoidModel<? extends LivingEntity> armorModelEmpty, armorModel,
+      armorModelLeggings, armorModelMPM,
       armorModelLeggingsMPM, armorModelCNPC, armorModelLeggingsCNPC;
 
-  public static void registerItemModels() {
-    registerChiseledArmorItemModel(ItemsExtraBitManipulation.chiseledHelmetDiamond);
-    registerChiseledArmorItemModel(ItemsExtraBitManipulation.chiseledChestplateDiamond);
-    registerChiseledArmorItemModel(ItemsExtraBitManipulation.chiseledLeggingsDiamond);
-    registerChiseledArmorItemModel(ItemsExtraBitManipulation.chiseledBootsDiamond);
-    registerChiseledArmorItemModel(ItemsExtraBitManipulation.chiseledHelmetIron);
-    registerChiseledArmorItemModel(ItemsExtraBitManipulation.chiseledChestplateIron);
-    registerChiseledArmorItemModel(ItemsExtraBitManipulation.chiseledLeggingsIron);
-    registerChiseledArmorItemModel(ItemsExtraBitManipulation.chiseledBootsIron);
-    registerItemModel(ItemsExtraBitManipulation.diamondNugget);
-    registerItemModel(ItemsExtraBitManipulation.bitWrench);
-    registerItemModel(ItemsExtraBitManipulation.sculptingLoop);
-    registerItemModel(ItemsExtraBitManipulation.sculptingSquare);
-    registerItemModel(ItemsExtraBitManipulation.sculptingSpadeCurved);
-    registerItemModel(ItemsExtraBitManipulation.sculptingSpadeSquared);
-    registerItemModel(ItemsExtraBitManipulation.modelingTool);
-    registerItemModel(ItemsExtraBitManipulation.modelingToolHead);
-    registerItemModel(ItemsExtraBitManipulation.bitWrenchHead);
-    registerItemModel(ItemsExtraBitManipulation.sculptingLoopHead);
-    registerItemModel(ItemsExtraBitManipulation.sculptingSquareHead);
-    registerItemModel(ItemsExtraBitManipulation.sculptingSpadeCurvedHead);
-    registerItemModel(ItemsExtraBitManipulation.sculptingSpadeSquaredHead);
-    registerItemBlockModel(BlocksExtraBitManipulation.bodyPartTemplate);
+  public static void registerItemModels(Context context) {
+    registerChiseledArmorItemModel(context, ItemsExtraBitManipulation.chiseledHelmetDiamond);
+    registerChiseledArmorItemModel(context, ItemsExtraBitManipulation.chiseledChestplateDiamond);
+    registerChiseledArmorItemModel(context, ItemsExtraBitManipulation.chiseledLeggingsDiamond);
+    registerChiseledArmorItemModel(context, ItemsExtraBitManipulation.chiseledBootsDiamond);
+    registerChiseledArmorItemModel(context, ItemsExtraBitManipulation.chiseledHelmetIron);
+    registerChiseledArmorItemModel(context, ItemsExtraBitManipulation.chiseledChestplateIron);
+    registerChiseledArmorItemModel(context, ItemsExtraBitManipulation.chiseledLeggingsIron);
+    registerChiseledArmorItemModel(context, ItemsExtraBitManipulation.chiseledBootsIron);
+    registerItemModel(context, ItemsExtraBitManipulation.diamondNugget);
+    registerItemModel(context, ItemsExtraBitManipulation.bitWrench);
+    registerItemModel(context, ItemsExtraBitManipulation.sculptingLoop);
+    registerItemModel(context, ItemsExtraBitManipulation.sculptingSquare);
+    registerItemModel(context, ItemsExtraBitManipulation.sculptingSpadeCurved);
+    registerItemModel(context, ItemsExtraBitManipulation.sculptingSpadeSquared);
+    registerItemModel(context, ItemsExtraBitManipulation.modelingTool);
+    registerItemModel(context, ItemsExtraBitManipulation.modelingToolHead);
+    registerItemModel(context, ItemsExtraBitManipulation.bitWrenchHead);
+    registerItemModel(context, ItemsExtraBitManipulation.sculptingLoopHead);
+    registerItemModel(context, ItemsExtraBitManipulation.sculptingSquareHead);
+    registerItemModel(context, ItemsExtraBitManipulation.sculptingSpadeCurvedHead);
+    registerItemModel(context, ItemsExtraBitManipulation.sculptingSpadeSquaredHead);
+    registerItemBlockModel(context, BlocksExtraBitManipulation.bodyPartTemplate);
     armorModel = new ModelChiseledArmor();
     armorModelLeggings = new ModelChiseledArmorLeggings();
-    armorModelEmpty = new ModelBiped();
+    armorModelEmpty =
+        new HumanoidModel<>(new ModelPart(Collections.emptyList(), Collections.emptyMap()));
 //    if (MorePlayerModelsReference.isLoaded) {
 //      MorePlayerModelsModels.initModels();
 //      armorModelMPM = MorePlayerModelsModels.ARMOR_MODEL_MPM;
@@ -75,13 +75,13 @@ public class ModelRegistration implements ModelLoadingPlugin {
 //      armorModelCNPC = CustomNPCsModels.ARMOR_MODEL_CNPC;
 //      armorModelLeggingsCNPC = CustomNPCsModels.ARMOR_MODEL_LEGGINGS_CNPC;
 //    }
-    armorModelEmpty.bipedHead.cubeList.clear();
-    armorModelEmpty.bipedBody.cubeList.clear();
-    armorModelEmpty.bipedRightArm.cubeList.clear();
-    armorModelEmpty.bipedLeftArm.cubeList.clear();
-    armorModelEmpty.bipedRightLeg.cubeList.clear();
-    armorModelEmpty.bipedLeftLeg.cubeList.clear();
-    registerIsolatedModels(ItemsExtraBitManipulation.chiseledHelmetDiamond,
+    ((ModelPartExtension) armorModelEmpty.head).ebm$clearCubeList();
+    ((ModelPartExtension) armorModelEmpty.body).ebm$clearCubeList();
+    ((ModelPartExtension) armorModelEmpty.rightArm).ebm$clearCubeList();
+    ((ModelPartExtension) armorModelEmpty.leftArm).ebm$clearCubeList();
+    ((ModelPartExtension) armorModelEmpty.rightLeg).ebm$clearCubeList();
+    ((ModelPartExtension) armorModelEmpty.leftLeg).ebm$clearCubeList();
+    registerIsolatedModels(context, ItemsExtraBitManipulation.chiseledHelmetDiamond,
         ArmorMovingPart.initAndGetIconModelLocations());
   }
 
@@ -111,27 +111,26 @@ public class ModelRegistration implements ModelLoadingPlugin {
     });
   }
 
-  private static void registerItemBlockModel(Block block) {
+  private static void registerItemBlockModel(Context context, Block block) {
     Item item = Item.byBlock(block);
     if (item != null) {
-      registerItemModel(item, ((BlockExtraBitManipulationBase) block).getCustomName());
+      registerItemModel(context, item, ((BlockExtraBitManipulationBase) block).getCustomName());
     }
   }
 
-  private static void registerItemModel(Item item) {
-    registerItemModel(item, ((ItemExtraBitManipulationBase) item).getName());
+  private static void registerItemModel(Context context, Item item) {
+    registerItemModel(context, item, ((ItemExtraBitManipulationBase) item).getName());
   }
 
-  private static void registerChiseledArmorItemModel(Item item) {
+  private static void registerChiseledArmorItemModel(Context context, Item item) {
     ItemChiseledArmor armorPiece = ((ItemChiseledArmor) item);
     ResourceLocation name = armorPiece.getRegistryName();
     if (name == null) {
       return;
     }
 
-    registerItemModel(armorPiece, name.getPath());
-    registerIsolatedModels(armorPiece, armorPiece.initItemModelLocation());
-
+    registerItemModel(context, armorPiece, name.getPath());
+    registerIsolatedModels(context, armorPiece, armorPiece.initItemModelLocation());
     armorPiece.armorType.initIconStack(armorPiece);
   }
 
@@ -141,28 +140,31 @@ public class ModelRegistration implements ModelLoadingPlugin {
 //        new ModelResourceLocation(new ResourceLocation(Reference.MOD_ID, name), "inventory"));
   }
 
-  private static void registerIsolatedModels(Item item, ResourceLocation... resourceLocations) {
-    ModelLoader.registerItemVariants(item, resourceLocations);
+  private static void registerIsolatedModels(Context context, Item item,
+                                             ResourceLocation... resourceLocations) {
+    context.addModels(resourceLocations);
+//    ModelLoader.registerItemVariants(item, resourceLocations);
   }
 
-  public static HumanoidModel<LivingEntity> getArmorModel(ItemStack stack, EquipmentSlot slot,
-                                                          LivingEntity entity) {
+  public static <T extends LivingEntity> HumanoidModel<T> getArmorModel(ItemStack stack,
+                                                                        EquipmentSlot slot,
+                                                                        T entity) {
     if (shouldRenderEmptymodel(stack)) {
-      return armorModelEmpty;
+      return (HumanoidModel<T>) armorModelEmpty;
     }
 
-    if (CustomNPCsReferences.isLoaded && CustomNPCsModels.isCustomNPC(entity)) {
-      return slot == EntityEquipmentSlot.LEGS ? armorModelLeggingsCNPC : armorModelCNPC;
-    }
+//    if (CustomNPCsReferences.isLoaded && CustomNPCsModels.isCustomNPC(entity)) {
+//      return slot == EntityEquipmentSlot.LEGS ? armorModelLeggingsCNPC : armorModelCNPC;
+//    }
 
-    return (!MorePlayerModelsReference.isLoaded || !(entity instanceof EntityPlayer) ?
-        (slot == EntityEquipmentSlot.LEGS ? armorModelLeggings : armorModel) :
-        (slot == EntityEquipmentSlot.LEGS ? armorModelLeggingsMPM : armorModelMPM));
+    return (HumanoidModel<T>) (!MorePlayerModelsReference.isLoaded || !(entity instanceof Player) ?
+        (slot == EquipmentSlot.LEGS ? armorModelLeggings : armorModel) :
+        (slot == EquipmentSlot.LEGS ? armorModelLeggingsMPM : armorModelMPM));
   }
 
-  public static String getArmorTexture(ItemStack stack, ArmorMaterial material) {
+  public static String getArmorTexture(ItemStack stack, ArmorMaterials material) {
     return shouldRenderEmptymodel(stack) ? null :
-        (material == ArmorMaterial.DIAMOND ? ARMOR_TEXTURE_PATH_DIANOND : ARMOR_TEXTURE_PATH_IRON);
+        (material == ArmorMaterials.DIAMOND ? ARMOR_TEXTURE_PATH_DIANOND : ARMOR_TEXTURE_PATH_IRON);
   }
 
   private static boolean shouldRenderEmptymodel(ItemStack stack) {
@@ -174,6 +176,7 @@ public class ModelRegistration implements ModelLoadingPlugin {
   @Override
   public void onInitializeModelLoader(Context pluginContext) {
     registerModels(pluginContext);
+    ModelRegistration.registerItemModels(pluginContext);
   }
 
   public enum ArmorModelRenderMode {

@@ -1,6 +1,6 @@
 package com.phylogeny.extrabitmanipulation.armor;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.phylogeny.extrabitmanipulation.api.ChiselsAndBitsAPIAccess;
 import com.phylogeny.extrabitmanipulation.helper.ItemStackHelper;
 import com.phylogeny.extrabitmanipulation.reference.Configs;
@@ -9,10 +9,12 @@ import java.util.ArrayList;
 import java.util.List;
 import mod.chiselsandbits.api.ItemType;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.block.model.ItemCameraTransforms.TransformType;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
+import org.lwjgl.opengl.GL11;
 
 public class ArmorItem {
   private final List<GlOperation> glOperations = new ArrayList<GlOperation>();
@@ -49,18 +51,22 @@ public class ArmorItem {
     return glOperations;
   }
 
-  public void render(LivingEntity entity, float scale, boolean isRightLegOrFoot) {
+  public void render(LivingEntity entity, PoseStack poseStack, MultiBufferSource multiBufferSource,
+                     float scale, boolean isRightLegOrFoot, int i, int j, int k) {
     float scale2 = 32 * scale + Configs.armorZFightingBufferScale;
     if (isRightLegOrFoot) {
       scale2 += Configs.armorZFightingBufferScaleRightLegOrFoot;
     }
 
-    GlStateManager.scale(scale2, scale2, scale2);
+
+    GL11.glScalef(scale2, scale2, scale2);
     if (ChiselsAndBitsAPIAccess.apiInstance.getItemType(stack) != ItemType.CHISELED_BLOCK) {
-      GlStateManager.scale(0.5F, 0.5F, 0.5F);
+      GL11.glScalef(0.5F, 0.5F, 0.5F);
     }
 
-    Minecraft.getInstance().getItemRenderer().renderItem(entity, stack, TransformType.NONE);
+    Minecraft.getInstance().getItemRenderer()
+        .renderStatic(entity, stack, ItemDisplayContext.NONE, false, poseStack, multiBufferSource,
+            entity.level(), i, j, k);
   }
 
   public void executeGlOperations() {

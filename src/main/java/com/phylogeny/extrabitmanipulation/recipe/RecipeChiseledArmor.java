@@ -1,6 +1,5 @@
 package com.phylogeny.extrabitmanipulation.recipe;
 
-import com.phylogeny.extrabitmanipulation.reference.Reference;
 import java.util.Random;
 import mod.chiselsandbits.items.ItemChisel;
 import net.minecraft.core.NonNullList;
@@ -10,6 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.CraftingBookCategory;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.ShapelessRecipe;
 import net.minecraftforge.common.ForgeHooks;
@@ -19,12 +19,11 @@ public class RecipeChiseledArmor extends ShapelessRecipe {
   private final Random rand = new Random();
   private final int bitCost;
 
-  public RecipeChiseledArmor(NonNullList<Ingredient> ingredients, Item output, Item input,
+  public RecipeChiseledArmor(String string, CraftingBookCategory craftingBookCategory,
+                             NonNullList<Ingredient> ingredients, Item output, Item input,
                              int bitCost) {
-    super(null, ingredients, new ItemStack(output));
+    super(string, craftingBookCategory, new ItemStack(output), ingredients);
     this.bitCost = bitCost;
-    setRegistryName(Reference.MOD_ID,
-        );
   }
 
   private String getItemName(Item item) {

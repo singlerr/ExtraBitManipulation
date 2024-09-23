@@ -16,7 +16,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.HitResult;
-import org.joml.Vector3d;
+import net.minecraft.world.phys.Vec3;
 
 public class ClientHelper {
 
@@ -44,7 +44,7 @@ public class ClientHelper {
     return getMinecraft().hitResult;
   }
 
-  public static <T extends ParticleOptions> void spawnParticle(Level worldIn, Vector3d particlePos,
+  public static <T extends ParticleOptions> void spawnParticle(Level worldIn, Vec3 particlePos,
                                                                ParticleProvider<T> particleFactory,
                                                                T particleOption) {
     getMinecraft().particleEngine.add(

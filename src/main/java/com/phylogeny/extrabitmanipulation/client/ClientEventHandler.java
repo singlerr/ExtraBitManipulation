@@ -238,7 +238,7 @@ public class ClientEventHandler {
 
     ModelBase model = event.getRenderer().getMainModel();
     if (model instanceof ModelBiped) {
-      modelPartConcealer.restoreModelPartVisiblity((ModelBiped) model);
+      modelPartConcealer.restoreModelPartVisibility((ModelBiped) model);
     }
 
     concealedModelPartsMap.remove(player.getUniqueID());

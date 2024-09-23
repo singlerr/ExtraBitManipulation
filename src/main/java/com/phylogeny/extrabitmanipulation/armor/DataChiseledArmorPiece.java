@@ -1,17 +1,16 @@
 package com.phylogeny.extrabitmanipulation.armor;
 
-import com.mojang.blaze3d.platform.MemoryTracker;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.phylogeny.extrabitmanipulation.helper.ItemStackHelper;
 import com.phylogeny.extrabitmanipulation.item.ItemChiseledArmor.ArmorType;
 import com.phylogeny.extrabitmanipulation.reference.NBTKeys;
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.nbt.NBTBase;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
-import net.minecraftforge.common.util.Constants.NBT;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.world.entity.LivingEntity;
 import org.lwjgl.opengl.GL11;
 
 public class DataChiseledArmorPiece {
@@ -28,7 +27,7 @@ public class DataChiseledArmorPiece {
     }
   }
 
-  public DataChiseledArmorPiece(NBTTagCompound nbt, ArmorType armorType) {
+  public DataChiseledArmorPiece(CompoundTag nbt, ArmorType armorType) {
     this(armorType);
     loadFromNBT(nbt);
   }
@@ -94,26 +93,30 @@ public class DataChiseledArmorPiece {
         partItemLists[partIndex].get(armorItemIndex);
   }
 
-  public int generateDisplayList(int partIndex, EntityLivingBase entity, float scale) {
-    GlStateManager.pushMatrix();
-    int displayList = MemoryTracker.generateDisplayLists(1);
-    GlStateManager.glNewList(displayList, GL11.GL_COMPILE);
+  public int generateDisplayList(int partIndex, LivingEntity entity, float scale,
+                                 PoseStack poseStack, MultiBufferSource bufferSource, int i, int j,
+                                 int k) {
+    GL11.glPushMatrix();
+
+    int displayList = GL11.glGenLists(1);
+    GL11.glNewList(displayList, GL11.GL_COMPILE);
     GlOperation.executeList(globalGlOperationsPre);
     for (ArmorItem armorItem : partItemLists[partIndex]) {
       if (armorItem.isEmpty()) {
         continue;
       }
 
-      GlStateManager.pushMatrix();
+      GL11.glPushMatrix();
       armorItem.executeGlOperations();
       GlOperation.executeList(globalGlOperationsPost);
-      armorItem.render(entity, scale, (armorType == ArmorType.BOOTS && partIndex == 0) ||
-          (armorType == ArmorType.LEGGINGS && partIndex == 1));
-      GlStateManager.popMatrix();
+      armorItem.render(entity, poseStack, bufferSource, scale,
+          (armorType == ArmorType.BOOTS && partIndex == 0) ||
+              (armorType == ArmorType.LEGGINGS && partIndex == 1), i, j, k);
+      GL11.glPopMatrix();
     }
-    GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-    GlStateManager.glEndList();
-    GlStateManager.popMatrix();
+    GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
+    GL11.glEndList();
+    GL11.glPopMatrix();
     return displayList;
   }
 
@@ -121,61 +124,61 @@ public class DataChiseledArmorPiece {
     return partIndex < 0 || partIndex >= partItemLists.length;
   }
 
-  public void saveToNBT(NBTTagCompound nbt) {
-    NBTTagCompound data = new NBTTagCompound();
-    data.setInteger(NBTKeys.ARMOR_TYPE, armorType.ordinal());
-    NBTTagList movingParts = new NBTTagList();
+  public void saveToNBT(CompoundTag nbt) {
+    CompoundTag data = new CompoundTag();
+    data.putInt(NBTKeys.ARMOR_TYPE, armorType.ordinal());
+    ListTag movingParts = new ListTag();
     boolean empty = true;
     for (List<ArmorItem> partItemList : partItemLists) {
-      NBTTagList itemList = new NBTTagList();
+      ListTag itemList = new ListTag();
       for (ArmorItem armorItem : partItemList) {
-        NBTTagCompound armorItemNbt = new NBTTagCompound();
+        CompoundTag armorItemNbt = new CompoundTag();
         armorItem.saveToNBT(armorItemNbt);
-        itemList.appendTag(armorItemNbt);
+        itemList.add(armorItemNbt);
         if (!armorItem.getStack().isEmpty()) {
           empty = false;
         }
       }
-      movingParts.appendTag(itemList);
+      movingParts.add(itemList);
     }
-    data.setTag(NBTKeys.ARMOR_PART_DATA, movingParts);
-    data.setBoolean(NBTKeys.ARMOR_NOT_EMPTY, !empty);
+    data.put(NBTKeys.ARMOR_PART_DATA, movingParts);
+    data.putBoolean(NBTKeys.ARMOR_NOT_EMPTY, !empty);
     GlOperation.saveListToNBT(data, NBTKeys.ARMOR_GL_OPERATIONS_PRE, globalGlOperationsPre);
     GlOperation.saveListToNBT(data, NBTKeys.ARMOR_GL_OPERATIONS_POST, globalGlOperationsPost);
-    nbt.setTag(NBTKeys.ARMOR_DATA, data);
+    nbt.put(NBTKeys.ARMOR_DATA, data);
   }
 
-  public void loadFromNBT(NBTTagCompound nbt) {
-    NBTTagCompound data = ItemStackHelper.getArmorData(nbt);
-    NBTTagList movingParts = data.getTagList(NBTKeys.ARMOR_PART_DATA, NBT.TAG_LIST);
-    for (int i = 0; i < movingParts.tagCount(); i++) {
-      NBTBase nbtBase = movingParts.get(i);
-      if (nbtBase.getId() != NBT.TAG_LIST) {
+  public void loadFromNBT(CompoundTag nbt) {
+    CompoundTag data = ItemStackHelper.getArmorData(nbt);
+    ListTag movingParts = data.getList(NBTKeys.ARMOR_PART_DATA, ListTag.TAG_LIST);
+    for (int i = 0; i < movingParts.size(); i++) {
+      Tag nbtBase = movingParts.get(i);
+      if (nbtBase.getId() != ListTag.TAG_LIST) {
         continue;
       }
 
       partItemLists[i].clear();
-      NBTTagList itemList = (NBTTagList) nbtBase;
-      for (int j = 0; j < itemList.tagCount(); j++) {
-        partItemLists[i].add(new ArmorItem(itemList.getCompoundTagAt(j)));
+      ListTag itemList = (ListTag) nbtBase;
+      for (int j = 0; j < itemList.size(); j++) {
+        partItemLists[i].add(new ArmorItem(itemList.getCompound(j)));
       }
     }
     GlOperation.loadListFromNBT(data, NBTKeys.ARMOR_GL_OPERATIONS_PRE, globalGlOperationsPre);
     GlOperation.loadListFromNBT(data, NBTKeys.ARMOR_GL_OPERATIONS_POST, globalGlOperationsPost);
   }
 
-  public static void setPartData(NBTTagCompound data, NBTTagList movingParts) {
-    data.setTag(NBTKeys.ARMOR_PART_DATA, movingParts);
+  public static void setPartData(CompoundTag data, ListTag movingParts) {
+    data.put(NBTKeys.ARMOR_PART_DATA, movingParts);
     boolean empty = true;
-    for (int i = 0; i < movingParts.tagCount(); i++) {
-      NBTBase nbtBase = movingParts.get(i);
-      if (nbtBase.getId() != NBT.TAG_LIST) {
+    for (int i = 0; i < movingParts.size(); i++) {
+      Tag nbtBase = movingParts.get(i);
+      if (nbtBase.getId() != ListTag.TAG_LIST) {
         continue;
       }
 
-      NBTTagList itemList = (NBTTagList) nbtBase;
-      for (int j = 0; j < itemList.tagCount(); j++) {
-        if (!ItemStackHelper.loadStackFromNBT(itemList.getCompoundTagAt(j), NBTKeys.ARMOR_ITEM)
+      ListTag itemList = (ListTag) nbtBase;
+      for (int j = 0; j < itemList.size(); j++) {
+        if (!ItemStackHelper.loadStackFromNBT(itemList.getCompound(j), NBTKeys.ARMOR_ITEM)
             .isEmpty()) {
           empty = false;
           break;
@@ -185,7 +188,7 @@ public class DataChiseledArmorPiece {
         break;
       }
     }
-    data.setBoolean(NBTKeys.ARMOR_NOT_EMPTY, !empty);
+    data.putBoolean(NBTKeys.ARMOR_NOT_EMPTY, !empty);
   }
 
 }

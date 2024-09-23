@@ -7,13 +7,14 @@
     "accessors.MinecraftAccessor",
     "accessors.ServerLevelAccessor",
     "accessors.SlotAccessor",
-    "mixin.ModelPartMixin",
     "mixin.PlayerMixin"
   ],
   "client": [
     "accessors.KeyMappingAccessor",
     "mixin.MinecraftMixin",
+    "mixin.ModelPartMixin",
     "mixin.MouseHandlerMixin",
+    "mixin.PartDefinitionMixin",
     "mixin.TextureAtlasMixin"
   ],
   "injectors": {

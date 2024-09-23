@@ -6,7 +6,9 @@ import com.phylogeny.extrabitmanipulation.packet.PacketBitParticles;
 import com.phylogeny.extrabitmanipulation.packet.PacketPlaceEntityBit;
 import com.phylogeny.extrabitmanipulation.reference.Configs;
 import com.phylogeny.extrabitmanipulation.reference.NBTKeys;
+import com.phylogeny.extrabitmanipulation.reference.Reference;
 import com.phylogeny.extrabitmanipulation.reference.Utility;
+import io.netty.buffer.Unpooled;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
@@ -18,16 +20,23 @@ import mod.chiselsandbits.api.IBitLocation;
 import mod.chiselsandbits.api.IChiselAndBitsAPI;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.fabricmc.fabric.api.networking.v1.FabricPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Registry;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityDimensions;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.monster.Blaze;
 import net.minecraft.world.entity.projectile.Projectile;
@@ -44,21 +53,25 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
-import net.minecraft.world.phys.shapes.Shapes;
 
 public class EntityBit extends Projectile {
+
+  public static final EntityType<EntityBit> ENTITY_TYPE =
+      Registry.register(BuiltInRegistries.ENTITY_TYPE,
+          new ResourceLocation(Reference.MOD_ID, "bit"),
+          EntityType.Builder.of((EntityType.EntityFactory<EntityBit>) EntityBit::new,
+              MobCategory.MISC).sized(Utility.PIXEL_F, Utility.PIXEL_F).build("bit"));
+
   private ItemStack bitStack = ItemStack.EMPTY;
   protected boolean inGround;
   public Entity shootingEntity;
 
-  public EntityBit(Level worldIn) {
-    super(worldIn);
-    setBoundingBox(Shapes.block().);
-    setSize(Utility.PIXEL_F, Utility.PIXEL_F);
+  public EntityBit(EntityType<EntityBit> entityType, Level worldIn) {
+    super(entityType, worldIn);
   }
 
   public EntityBit(Level worldIn, double x, double y, double z, ItemStack bitStack) {
-    this(worldIn);
+    this(ENTITY_TYPE, worldIn);
     setPos(x, y, z);
     this.bitStack = bitStack.copy();
     this.bitStack.setCount(1);
@@ -343,14 +356,14 @@ public class EntityBit extends Projectile {
         SoundEvent sound = SoundEvents.METAL_HIT;
         BlockState state = level().getBlockState(pos);
         if (state != null) {
-          SoundType soundType = state.getBlock().getSoundType(state, level(), pos, this);
+          SoundType soundType = state.getBlock().getSoundType(state);
           if (soundType != null) {
             sound = soundType.getFallSound();
           }
         }
         playSound(sound, volume, 1.0F + (random.nextFloat() - random.nextFloat()) * 0.4F);
       }
-      drop = !placeBit(level(), bitStack, pos, blockHitResult.getDirection(),
+      drop = !placeBit(level(), bitStack, pos, blockHitResult.getLocation(),
           blockHitResult.getDirection(), level().isClientSide);
       if (!level().isClientSide && !drop) {
         updateClients(new PacketPlaceEntityBit(bitStack, pos, result));
@@ -365,7 +378,7 @@ public class EntityBit extends Projectile {
     }
   }
 
-  private void updateClients(IMessage message) {
+  private void updateClients(FabricPacket message) {
     ExtraBitManipulation.packetNetwork.sendToAllAround(message,
         new TargetPoint(world.provider.getDimension(), posX, posY, posZ, 100));
   }
@@ -451,19 +464,34 @@ public class EntityBit extends Projectile {
   @Override
   protected void addAdditionalSaveData(CompoundTag compoundTag) {
     super.addAdditionalSaveData(compoundTag);
-    ByteBufUtils.writeItemStack(buffer, bitStack);
-    buffer.writeDouble(motionX);
-    buffer.writeDouble(motionY);
-    buffer.writeDouble(motionZ);
+
+    Vec3 delta = getDeltaMovement();
+
+    FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+    buf.writeItem(bitStack);
+    buf.writeDouble(delta.x);
+    buf.writeDouble(delta.y);
+    buf.writeDouble(delta.z);
+
+    byte[] dest = new byte[buf.writerIndex() + 1];
+    buf.writeBytes(dest);
+
+    compoundTag.putByteArray("forgeCompatData", dest);
   }
 
   @Override
   protected void readAdditionalSaveData(CompoundTag compoundTag) {
     super.readAdditionalSaveData(compoundTag);
-    bitStack = ByteBufUtils.readItemStack(buffer);
-    motionX = buffer.readDouble();
-    motionY = buffer.readDouble();
-    motionZ = buffer.readDouble();
+
+    byte[] src = compoundTag.getByteArray("forgeCompatData");
+
+    FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.wrappedBuffer(src));
+
+    bitStack = buf.readItem();
+    double x = buf.readDouble();
+    double y = buf.readDouble();
+    double z = buf.readDouble();
+    setDeltaMovement(new Vec3(x, y, z));
   }
 
   @Override

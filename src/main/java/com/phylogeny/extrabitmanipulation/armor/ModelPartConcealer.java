@@ -1,14 +1,11 @@
 package com.phylogeny.extrabitmanipulation.armor;
 
 import com.google.common.primitives.Bytes;
-import com.phylogeny.extrabitmanipulation.armor.model.cnpc.CustomNPCsModels;
-import com.phylogeny.extrabitmanipulation.armor.model.mpm.MorePlayerModelsModels;
-import com.phylogeny.extrabitmanipulation.extension.ModelPartExtension;
-import com.phylogeny.extrabitmanipulation.extension.ModelPartType;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.phylogeny.extrabitmanipulation.item.ItemChiseledArmor.ModelMovingPart;
-import com.phylogeny.extrabitmanipulation.reference.CustomNPCsReferences;
-import com.phylogeny.extrabitmanipulation.reference.MorePlayerModelsReference;
 import com.phylogeny.extrabitmanipulation.reference.NBTKeys;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -16,18 +13,21 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nullable;
-import net.minecraft.client.model.ModelBase;
-import net.minecraft.client.model.ModelBiped;
-import net.minecraft.client.model.ModelRenderer;
+import net.minecraft.client.model.EntityModel;
+import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.entity.LivingEntity;
 
 public class ModelPartConcealer {
   private Set<ModelMovingPart> concealedParts = new HashSet<>();
   private Set<ModelMovingPart> concealedPartOverlays = new HashSet<>();
   private final Set<ModelMovingPart> concealedPartsCombined = new HashSet<>();
   private final Map<ModelMovingPart, ModelPart> concealedPartRenderers = new HashMap<>();
+
+  private final ModelPart EMPTY_MODEL =
+      new ModelPart(Collections.emptyList(), Collections.emptyMap());
 
   public ModelPartConcealer() {
   }
@@ -115,69 +115,62 @@ public class ModelPartConcealer {
     }
   }
 
-  public void restoreModelPartVisiblity(ModelPart model) {
+  public <T extends LivingEntity> void restoreModelPartVisibility(HumanoidModel<T> model) {
 
 
     concealedPartRenderers.keySet().forEach(part ->
     {
       ModelPart renderer = concealedPartRenderers.get(part);
-      ModelPartExtension ext = (ModelPartExtension) model;
       switch (part) {
         case HEAD:
-          ext.ebm$putChild(ModelPartType.HEAD, renderer);
+          model.head = renderer;
           break;
         case BODY:
-          ext.ebm$putChild(ModelPartType.BODY, renderer);
+          model.body = renderer;
           break;
         case ARM_RIGHT:
-          ext.ebm$putChild(ModelPartType.RIGHT_ARM, renderer);
+          model.rightArm = renderer;
           break;
         case ARM_LEFT:
-          ext.ebm$putChild(ModelPartType.LEFT_ARM, renderer);
+          model.leftArm = renderer;
           break;
         case LEG_RIGHT:
-          ext.ebm$putChild(ModelPartType.RIGHT_LEG, renderer);
+          model.rightLeg = renderer;
           break;
         case LEG_LEFT:
-          ext.ebm$putChild(ModelPartType.LEFT_LEG, renderer);
+          model.leftLeg = renderer;
       }
     });
   }
 
-  public ModelPartConcealer applyToModel(ModelPart model) {
+  public <T extends LivingEntity> ModelPartConcealer applyToModel(HumanoidModel<T> model) {
     concealedParts.forEach(part ->
     {
-      ModelPartExtension ext = (ModelPartExtension) model;
+
       switch (part) {
         case HEAD:
-          concealedPartRenderers.put(part, ext.ebm$getChild(ModelPartType.HEAD));
-          ext.ebm$putChild(ModelPartType.HEAD,
-              getEmptyModelRenderer(model, ext.ebm$getChild(ModelPartType.HEAD), part));
+          concealedPartRenderers.put(part, model.head);
+          model.head = EMPTY_MODEL;
           break;
         case BODY:
-          concealedPartRenderers.put(part, ext.ebm$getChild(ModelPartType.BODY));
-          ext.ebm$putChild(ModelPartType.HEAD,
-              getEmptyModelRenderer(model, ext.ebm$getChild(ModelPartType.BODY), part));
+          concealedPartRenderers.put(part, model.body);
+          model.body = EMPTY_MODEL;
           break;
         case ARM_RIGHT:
-          concealedPartRenderers.put(part, ext.ebm$getChild(ModelPartType.RIGHT_ARM));
-          ext.ebm$putChild(ModelPartType.HEAD,
-              getEmptyModelRenderer(model, ext.ebm$getChild(ModelPartType.RIGHT_ARM), part));
+          concealedPartRenderers.put(part, model.rightArm);
+          model.rightArm = EMPTY_MODEL;
           break;
         case ARM_LEFT:
-          concealedPartRenderers.put(part, ext.ebm$getChild(ModelPartType.LEFT_ARM));
-          ext.ebm$putChild(ModelPartType.HEAD,
-              getEmptyModelRenderer(model, ext.ebm$getChild(ModelPartType.LEFT_ARM), part));
+          concealedPartRenderers.put(part, model.leftArm);
+          model.leftArm = EMPTY_MODEL;
           break;
         case LEG_RIGHT:
-          concealedPartRenderers.put(part, ext.ebm$getChild(ModelPartType.RIGHT_LEG));
-          ext.ebm$putChild(ModelPartType.HEAD,
-              getEmptyModelRenderer(model, ext.ebm$getChild(ModelPartType.RIGHT_LEG), part));
+          concealedPartRenderers.put(part, model.rightLeg);
+          model.rightLeg = EMPTY_MODEL;
           break;
         case LEG_LEFT:
-          concealedPartRenderers.put(part, ext.ebm$getChild(ModelPartType.LEFT_LEG));
-          ext.ebm$putChild(ModelPartType.HEAD,
-              getEmptyModelRenderer(model, ext.ebm$getChild(ModelPartType.LEFT_LEG), part));
+          concealedPartRenderers.put(part, model.leftLeg);
+          model.leftLeg = EMPTY_MODEL;
       }
     });
     if (!(model instanceof PlayerModel<?> modelPlayer)) {
@@ -209,41 +202,21 @@ public class ModelPartConcealer {
     return this;
   }
 
-  private ModelPart getEmptyModelRenderer(ModelPart model, ModelPart renderer,
-                                          ModelMovingPart part) {
-    if (MorePlayerModelsReference.isLoaded && MorePlayerModelsModels.isModelRendererMPM(renderer)) {
-      ModelPart modelRenderer =
-          MorePlayerModelsModels.getEmptyModelRenderer(model, renderer, part);
-      if (part.ordinal() > 3) {
-        modelRenderer.xRot += part == ModelMovingPart.LEG_LEFT ? 1.9 : -1.9;
-      }
-
-      return modelRenderer;
-    }
-    if (CustomNPCsReferences.isLoaded && CustomNPCsModels.isModelRendererCNPC(renderer)) {
-      ModelPart modelRenderer = CustomNPCsModels.getEmptyModelRenderer(model, renderer, part);
-      if (part.ordinal() > 3) {
-        modelRenderer.xRot += part == ModelMovingPart.LEG_LEFT ? 1.9 : -1.9;
-      }
-
-      return modelRenderer;
-    }
-    return new ModelRendererEmpty(renderer);
+  private EntityModel<?> getEmptyModelRenderer() {
+    return new ModelRendererEmpty<>();
   }
 
-  public static class ModelRendererEmpty extends ModelPart {
-    private static final ModelBase MODEL_EMPTY = new ModelBase() {
-    };
+  public static class ModelRendererEmpty<T extends LivingEntity> extends EntityModel<T> {
 
-    public ModelRendererEmpty(ModelRenderer renderer) {
-      super(MODEL_EMPTY);
+    @Override
+    public void setupAnim(T entity, float f, float g, float h, float i, float j) {
 
-      ModelBiped.copyModelAngles(renderer, this);
     }
 
     @Override
-    public void render(float scale) {
-    }
+    public void renderToBuffer(PoseStack poseStack, VertexConsumer vertexConsumer, int i, int j,
+                               float f, float g, float h, float k) {
 
+    }
   }
 }

@@ -134,9 +134,6 @@ public class ItemsExtraBitManipulation {
     Registry.register(BuiltInRegistries.ITEM,
         new ResourceLocation(Reference.MOD_ID, "chiseled_boots_iron"), chiseledBootsIron);
 
-    if (clientSide) {
-      ModelRegistration.registerItemModels();
-    }
   }
 
   private static void initBitToolProperties(Item item, String itemTitle) {
