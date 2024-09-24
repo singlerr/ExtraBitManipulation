@@ -25,7 +25,6 @@ import com.phylogeny.extrabitmanipulation.packet.PacketCursorStack;
 import com.phylogeny.extrabitmanipulation.packet.PacketOverwriteStackBitMappings;
 import com.phylogeny.extrabitmanipulation.packet.PacketSetDesign;
 import com.phylogeny.extrabitmanipulation.packet.PacketSetTabAndStateBlockButton;
-import com.phylogeny.extrabitmanipulation.proxy.ProxyCommon;
 import com.phylogeny.extrabitmanipulation.reference.ChiselsAndBitsReferences;
 import com.phylogeny.extrabitmanipulation.reference.Configs;
 import com.phylogeny.extrabitmanipulation.reference.NBTKeys;
@@ -44,12 +43,15 @@ import mod.chiselsandbits.api.IBitAccess;
 import mod.chiselsandbits.api.IBitBrush;
 import mod.chiselsandbits.api.IChiselAndBitsAPI;
 import mod.chiselsandbits.api.ItemType;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -98,7 +100,8 @@ public class GuiBitMapping extends ContainerScreen {
   private AABB previewStackBox;
 
   public GuiBitMapping(Player player, boolean designMode) {
-    super(ProxyCommon.createBitMappingContainer(player));
+    super(ExtraBitManipulation.createBitMappingContainer(player), player.getInventory(),
+        Component.literal("GuiBitMapping"));
     this.designMode = designMode;
     api = ChiselsAndBitsAPIAccess.apiInstance;
 
@@ -197,7 +200,7 @@ public class GuiBitMapping extends ContainerScreen {
     if (bitMapPerTool) {
       String nbtKey = buttonStates.selected ? NBTKeys.STATE_TO_BIT_MAP_PERMANENT :
           NBTKeys.BLOCK_TO_BIT_MAP_PERMANENT;
-      ExtraBitManipulation.packetNetwork.sendToServer(
+      ClientPlayNetworking.send(
           new PacketAddBitMapping(nbtKey, state, bit, Configs.saveStatesById));
     } else {
       Map<BlockState, IBitBrush> bitMap =
@@ -324,11 +327,11 @@ public class GuiBitMapping extends ContainerScreen {
         }
       }
     }
-    previewStack = bitAccess.getBitsAsItem(null, ItemType.CHISLED_BLOCK, false);
+    previewStack = bitAccess.getBitsAsItem(null, ItemType.CHISELED_BLOCK, false);
   }
 
   public ItemStack getHeldStack() {
-    return mc.player.getHeldItemMainhand();
+    return Minecraft.getInstance().player.getMainHandItem();
   }
 
   @Override

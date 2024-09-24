@@ -1,6 +1,5 @@
 package com.phylogeny.extrabitmanipulation.armor.capability;
 
-import com.phylogeny.extrabitmanipulation.ExtraBitManipulation;
 import com.phylogeny.extrabitmanipulation.armor.ModelPartConcealer;
 import com.phylogeny.extrabitmanipulation.client.ClientHelper;
 import com.phylogeny.extrabitmanipulation.helper.ItemStackHelper;
@@ -15,11 +14,14 @@ import java.util.HashSet;
 import java.util.List;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.entity.player.EntityPlayerMP;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.model.Model;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.AbortableIterationConsumer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.entity.EntityTypeTest;
@@ -107,9 +109,8 @@ public class ChiseledArmorSlotsHandler extends ItemStackHandler
       }
 
       for (Player player2 : players) {
-        ExtraBitManipulation.packetNetwork.sendTo(
-            new PacketSyncArmorSlot(player.getUniqueID(), getStackInSlot(i), i),
-            (EntityPlayerMP) player2);
+        ServerPlayNetworking.send((ServerPlayer) player2,
+            new PacketSyncArmorSlot(player.getUUID(), getStackInSlot(i), i));
       }
 
       syncedSlots[i] = true;
@@ -128,8 +129,9 @@ public class ChiseledArmorSlotsHandler extends ItemStackHandler
 
   @Override
   @Nullable
-  public ModelPartConcealer getAndApplyModelPartConcealer(ModelPart model) {
-    return modelPartConcealer == null ? null : modelPartConcealer.copy().applyToModel(model);
+  public ModelPartConcealer getAndApplyModelPartConcealer(Model model) {
+    return modelPartConcealer == null ? null :
+        modelPartConcealer.copy().applyToModel((HumanoidModel<? extends LivingEntity>) model);
   }
 
   @Override

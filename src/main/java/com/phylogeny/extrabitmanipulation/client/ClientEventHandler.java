@@ -9,7 +9,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import com.phylogeny.extrabitmanipulation.ExtraBitManipulation;
 import com.phylogeny.extrabitmanipulation.api.ChiselsAndBitsAPIAccess;
 import com.phylogeny.extrabitmanipulation.armor.LayerChiseledArmor;
 import com.phylogeny.extrabitmanipulation.armor.ModelPartConcealer;
@@ -61,13 +60,13 @@ import mod.chiselsandbits.api.IChiselAndBitsAPI;
 import mod.chiselsandbits.api.ItemType;
 import mod.chiselsandbits.api.ModKeyBinding;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.Model;
-import net.minecraft.client.model.ModelBase;
-import net.minecraft.client.model.ModelBiped;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.RenderType;
@@ -92,8 +91,6 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
-import org.joml.Vector3d;
-import org.joml.Vector3i;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.Cylinder;
 import org.lwjgl.util.glu.Disk;
@@ -104,8 +101,8 @@ import org.lwjgl.util.glu.Sphere;
 public class ClientEventHandler {
   private static float millisecondsElapsed;
   private static Stopwatch timer;
-  private static Vector3d drawnStartPoint = null;
-  private static Vector3i drawnStartPointModelingTool = null;
+  private static Vec3 drawnStartPoint = null;
+  private static Vec3i drawnStartPointModelingTool = null;
   private static final ResourceLocation ARROW_HEAD =
       new ResourceLocation(Reference.MOD_ID, "textures/overlays/arrow_head.png");
   private static final ResourceLocation ARROW_BIDIRECTIONAL =
@@ -172,7 +169,7 @@ public class ClientEventHandler {
       return false;
     }
 
-    IChiseledArmorSlotsHandler cap = ChiseledArmorSlotsHandler.getCapability(player);
+    IChiseledArmorSlotsHandler cap = ChiseledArmorSlotsHandler.getCapability(player).orElse(null);
     if (cap == null || !cap.hasArmor() || !cap.hasArmorSet(0)) {
       return false;
     }
@@ -194,13 +191,13 @@ public class ClientEventHandler {
     }
 
     Model model = renderer.getModel();
-    if (!(model instanceof ModelBiped)) {
+    if (!(model instanceof HumanoidModel<?>)) {
       return false;
     }
 
-    ModelPartConcealer modelPartConcealer = cap.getAndApplyModelPartConcealer((ModelBiped) model);
+    ModelPartConcealer modelPartConcealer = cap.getAndApplyModelPartConcealer(model);
     if (modelPartConcealer != null && !modelPartConcealer.isEmpty()) {
-      concealedModelPartsMap.put(player.getUniqueID(), modelPartConcealer);
+      concealedModelPartsMap.put(player.getUUID(), modelPartConcealer);
       RenderLayersExtraBitManipulation.forceUpdateModels(!isPlayerModelAlt);
     }
 
@@ -217,7 +214,7 @@ public class ClientEventHandler {
       return;
     }
 
-    IChiseledArmorSlotsHandler cap = ChiseledArmorSlotsHandler.getCapability(player);
+    IChiseledArmorSlotsHandler cap = ChiseledArmorSlotsHandler.getCapability(player).orElse(null);
     if (cap == null) {
       return;
     }
@@ -236,12 +233,12 @@ public class ClientEventHandler {
       return;
     }
 
-    ModelBase model = event.getRenderer().getMainModel();
-    if (model instanceof ModelBiped) {
-      modelPartConcealer.restoreModelPartVisibility((ModelBiped) model);
+    Model model = renderer.getModel();
+    if (model instanceof HumanoidModel<?>) {
+      modelPartConcealer.restoreModelPartVisibility((HumanoidModel<?>) model);
     }
 
-    concealedModelPartsMap.remove(player.getUniqueID());
+    concealedModelPartsMap.remove(player.getUUID());
     RenderLayersExtraBitManipulation.forceUpdateModels(!isPlayerModelAlt);
   }
 
@@ -272,13 +269,13 @@ public class ClientEventHandler {
       } else if (KeyBindingsExtraBitManipulation.OPEN_CHISELED_ARMOR_GUI.isKeyDown()) {
         if (ChiseledArmorSlotsHandler.findNextArmorSetIndex(ChiseledArmorSlotsHandler.COUNT_SETS) >=
             0) {
-          ExtraBitManipulation.packetNetwork.sendToServer(new PacketOpenChiseledArmorGui());
+          ClientPlayNetworking.send(new PacketOpenChiseledArmorGui());
         } else {
           ClientHelper.printChatMessageWithDeletion(
               "You must be wearing at least one piece of Chiseled Armor to open the Chiseled Armor GUI.");
         }
       } else if (KeyBindingsExtraBitManipulation.OPEN_CHISELED_ARMOR_SLOTS_GUI.isKeyDown()) {
-        ExtraBitManipulation.packetNetwork.sendToServer(new PacketOpenInventoryGui(false));
+        ClientPlayNetworking.send(new PacketOpenInventoryGui(false));
       } else if (ItemStackHelper.isBitToolStack(stack) ||
           ItemStackHelper.isChiseledArmorStack(stack)) {
         Minecraft.getInstance().setScreen(new GuiBitToolSettingsMenu());
@@ -300,12 +297,13 @@ public class ClientEventHandler {
         timer = Stopwatch.createStarted();
       }
 
-      ExtraBitManipulation.packetNetwork.sendToServer(new PacketThrowBit());
+      ClientPlayNetworking.send(new PacketThrowBit());
     }
   }
 
   private static void openBitMappingGui() {
-    ExtraBitManipulation.packetNetwork.sendToServer(new PacketOpenBitMappingGui());
+    ClientPlayNetworking.send(new PacketOpenBitMappingGui());
+
   }
 
   private static boolean interceptMouseInput(double deltaX, double deltaY, int button) {
@@ -318,7 +316,7 @@ public class ClientEventHandler {
         boolean forward = deltaX < 0;
         if (KeyBindingsExtraBitManipulation.SHIFT.isKeyDown()) {
           if (ItemStackHelper.isBitWrenchItem(stack.getItem())) {
-            ExtraBitManipulation.packetNetwork.sendToServer(new PacketCycleBitWrenchMode(forward));
+            ClientPlayNetworking.send(new PacketCycleBitWrenchMode(forward));
           } else {
             cycleSemiDiameter(player, stack, forward);
           }
@@ -361,9 +359,10 @@ public class ClientEventHandler {
         cancel = true;
       }
     } else if (button == 0) {
-      if (!player.capabilities.allowEdit) {
-        return cancel;
-      }
+
+//      if (!player.capabilities.allowEdit) {
+////        return cancel;
+////      }
 
       ItemStack stack = player.getMainHandItem();
       Item item = stack.getItem();
@@ -374,7 +373,7 @@ public class ClientEventHandler {
           int mode = BitToolSettingsHelper.getArmorMode(nbt);
           if (mode == 0) {
             BlockHitResult blockHitResult = (BlockHitResult) target;
-            ExtraBitManipulation.packetNetwork.sendToServer(
+            ClientPlayNetworking.send(
                 new PacketSetCollectionBox(player.yHeadRot, player.isShiftKeyDown(),
                     player.getDirection().getOpposite(), blockHitResult.getBlockPos(),
                     blockHitResult.getDirection(), target.getLocation()));
@@ -434,13 +433,13 @@ public class ClientEventHandler {
                       y2 += side.getStepY() * Utility.PIXEL_F;
                       z2 += side.getStepZ() * Utility.PIXEL_F;
                     }
-                    drawnStartPoint = new Vector3d(x2, y2, z2);
+                    drawnStartPoint = new Vec3(x2, y2, z2);
                     if (isArmor && player.isShiftKeyDown()) {
-                      Vector3d vec = new Vector3d(side.getStepX(), side.getStepY(),
+                      Vec3 vec = new Vec3(side.getStepX(), side.getStepY(),
                           side.getStepZ());
                       if (BitToolSettingsHelper.areArmorBitsTargeted(
                           ItemStackHelper.getNBTOrNew(stack))) {
-                        vec = vec.mul(Utility.PIXEL_D);
+                        vec = vec.multiply(Utility.PIXEL_D, Utility.PIXEL_D, Utility.PIXEL_D);
                       }
 
                       drawnStartPoint = drawnStartPoint.add(vec);
@@ -481,15 +480,14 @@ public class ClientEventHandler {
                         new ArmorCollectionData(nbt, (ItemChiseledArmor) item,
                             getDrawnArmorCollectionBox(player, nbt, side, pos, hit));
                     swingTool = ItemChiseledArmor.collectArmorBlocks(player, collectionData);
-                    ExtraBitManipulation.packetNetwork.sendToServer(
-                        new PacketCollectArmorBlocks(collectionData));
+                    ClientPlayNetworking.send(new PacketCollectArmorBlocks(collectionData));
                   } else {
                     SculptingData sculptingData =
                         new SculptingData(stack.getTag(), (ItemSculptingTool) item);
                     swingTool =
                         ((ItemSculptingTool) item).sculptBlocks(stack, player, player.level(), pos,
                             side, hit, drawnStartPoint, sculptingData);
-                    ExtraBitManipulation.packetNetwork.sendToServer(
+                    ClientPlayNetworking.send(
                         new PacketSculpt(pos, side, hit, drawnStartPoint, sculptingData));
                   }
                 }
@@ -597,16 +595,15 @@ public class ClientEventHandler {
                   return cancel;
                 }
                 if (!KeyBindingsExtraBitManipulation.SHIFT.isKeyDown() && drawnMode) {
-                  drawnStartPointModelingTool = new Vector3i(pos.getX(), pos.getY(), pos.getZ());
+                  drawnStartPointModelingTool = new Vec3i(pos.getX(), pos.getY(), pos.getZ());
                 } else {
                   if (!KeyBindingsExtraBitManipulation.SHIFT.isKeyDown() || drawnMode) {
                     ModelReadData modelingData = new ModelReadData(stack.getTag());
                     swingTool =
                         BitAreaHelper.readBlockStates(stack, player, player.level(), pos, hit,
                             drawnStartPointModelingTool, modelingData);
-                    ExtraBitManipulation.packetNetwork.sendToServer(
-                        new PacketReadBlockStates(pos, hit,
-                            drawnStartPointModelingTool, modelingData));
+                    ClientPlayNetworking.send(new PacketReadBlockStates(pos, hit,
+                        drawnStartPointModelingTool, modelingData));
                   }
                   if (drawnMode) {
                     drawnStartPointModelingTool = null;
@@ -884,7 +881,7 @@ public class ClientEventHandler {
       GL11.glPushMatrix();
       GlStateManager.disableLighting();
       GlStateManager.enableAlpha();
-      GlStateManager.enableBlend();
+      GlStateManager._enableBlend();
       GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
       GlStateManager.enableTexture2D();
       GL11.glPushMatrix();

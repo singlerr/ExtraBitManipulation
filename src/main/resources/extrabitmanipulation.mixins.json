@@ -15,7 +15,9 @@
     "mixin.ModelPartMixin",
     "mixin.MouseHandlerMixin",
     "mixin.PartDefinitionMixin",
-    "mixin.TextureAtlasMixin"
+    "mixin.TextureAtlasMixin",
+    "mixin.VillagerModelMixin",
+    "mixin.IllagerModelMixin"
   ],
   "injectors": {
     "defaultRequire": 1

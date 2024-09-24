@@ -21,6 +21,10 @@ public class PacketOpenChiseledArmorGui extends PacketEmpty {
     super(buffer);
   }
 
+  public PacketOpenChiseledArmorGui() {
+    super();
+  }
+
   @Override
   public PacketType<?> getType() {
     return PACKET_TYPE;
@@ -36,8 +40,7 @@ public class PacketOpenChiseledArmorGui extends PacketEmpty {
       mainThread.execute(new Runnable() {
         @Override
         public void run() {
-          TODO("Implement")
-          player.openGui(ExtraBitManipulation.instance, GuiIDs.CHISELED_ARMOR.getID(),
+          player.openMenu(ExtraBitManipulation.instance, GuiIDs.CHISELED_ARMOR.getID(),
               player.level(),
               0, 0, 0);
         }

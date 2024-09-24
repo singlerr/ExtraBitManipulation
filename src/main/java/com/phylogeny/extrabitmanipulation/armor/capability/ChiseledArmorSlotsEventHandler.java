@@ -128,10 +128,10 @@ public class ChiseledArmorSlotsEventHandler {
 
 
     IChiseledArmorSlotsHandler capOld =
-        ChiseledArmorSlotsHandler.getCapability(oldPlayer);
+        ChiseledArmorSlotsHandler.getCapability(oldPlayer).orElse(null);
     if (capOld != null) {
       IChiseledArmorSlotsHandler capNew =
-          ChiseledArmorSlotsHandler.getCapability(newPlayer);
+          ChiseledArmorSlotsHandler.getCapability(newPlayer).orElse(null);
       if (capNew != null) {
         ((ChiseledArmorSlotsHandler) capNew).deserializeNBT(
             ((ChiseledArmorSlotsHandler) capOld).serializeNBT());
@@ -143,7 +143,7 @@ public class ChiseledArmorSlotsEventHandler {
     if (!(entity instanceof Player player)) {
       return;
     }
-    IChiseledArmorSlotsHandler cap = ChiseledArmorSlotsHandler.getCapability(player);
+    IChiseledArmorSlotsHandler cap = ChiseledArmorSlotsHandler.getCapability(player).orElse(null);
     if (cap == null) {
       return;
     }

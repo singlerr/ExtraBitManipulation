@@ -157,9 +157,9 @@ public class ModelRegistration implements ModelLoadingPlugin {
 //      return slot == EntityEquipmentSlot.LEGS ? armorModelLeggingsCNPC : armorModelCNPC;
 //    }
 
-    return (HumanoidModel<T>) (!MorePlayerModelsReference.isLoaded || !(entity instanceof Player) ?
+    return !MorePlayerModelsReference.isLoaded || !(entity instanceof Player) ?
         (slot == EquipmentSlot.LEGS ? armorModelLeggings : armorModel) :
-        (slot == EquipmentSlot.LEGS ? armorModelLeggingsMPM : armorModelMPM));
+        (slot == EquipmentSlot.LEGS ? armorModelLeggingsMPM : armorModelMPM);
   }
 
   public static String getArmorTexture(ItemStack stack, ArmorMaterials material) {

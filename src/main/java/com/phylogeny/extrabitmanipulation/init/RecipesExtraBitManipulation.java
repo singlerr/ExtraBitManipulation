@@ -23,7 +23,7 @@ public class RecipesExtraBitManipulation {
     }
   }
 
-  void registerRecipes() {
+  public static void registerRecipes() {
     registerChiseledArmorRecipes(ItemsExtraBitManipulation.chiseledHelmetDiamond,
         Items.DIAMOND_HELMET, 272);
     registerChiseledArmorRecipes(ItemsExtraBitManipulation.chiseledChestplateDiamond,

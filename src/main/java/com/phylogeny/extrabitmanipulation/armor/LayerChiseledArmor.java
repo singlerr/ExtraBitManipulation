@@ -1,9 +1,13 @@
 package com.phylogeny.extrabitmanipulation.armor;
 
-import com.mojang.blaze3d.platform.MemoryTracker;
+import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.phylogeny.extrabitmanipulation.armor.capability.ChiseledArmorSlotsHandler;
 import com.phylogeny.extrabitmanipulation.armor.capability.IChiseledArmorSlotsHandler;
 import com.phylogeny.extrabitmanipulation.client.ClientHelper;
+import com.phylogeny.extrabitmanipulation.extension.IllagerModelExtension;
+import com.phylogeny.extrabitmanipulation.extension.VillagerModelExtension;
 import com.phylogeny.extrabitmanipulation.helper.ItemStackHelper;
 import com.phylogeny.extrabitmanipulation.init.ReflectionExtraBitManipulation;
 import com.phylogeny.extrabitmanipulation.item.ItemChiseledArmor;
@@ -20,69 +24,81 @@ import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.HumanoidModel;
+import net.minecraft.client.model.IllagerModel;
+import net.minecraft.client.model.Model;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.model.VexModel;
+import net.minecraft.client.model.VillagerModel;
 import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.client.renderer.entity.LivingEntityRenderer;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.monster.AbstractIllager;
+import net.minecraft.world.entity.monster.ZombieVillager;
+import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import org.lwjgl.opengl.GL11;
 
-public class LayerChiseledArmor implements RenderLayer<LivingEntity> {
+public class LayerChiseledArmor<M extends EntityModel<LivingEntity>>
+    extends RenderLayer<LivingEntity, M> {
   private final Map<CompoundTag, List<Integer>> movingPartsDisplayListsMap =
       new HashMap<CompoundTag, List<Integer>>();
   private ModelPart head, body, villagerArms, rightLeg, leftLeg, rightArm, leftArm;
-  private EntityModel<?> model;
+  private Model model;
   private boolean smallArms, isIllager, isVex;
-  private final LivingEntityRenderer<?, ?> livingEntityRenderer;
+  private RenderLayerParent<LivingEntity, M> livingEntityRenderer;
 
-  public LayerChiseledArmor(LivingEntityRenderer<?, ?> livingEntityRenderer) {
+  public LayerChiseledArmor(RenderLayerParent<LivingEntity, M> renderLayerParent) {
+    super(renderLayerParent);
     this.livingEntityRenderer = livingEntityRenderer;
     updateModelAndRenderers(false);
   }
 
   public void updateModelAndRenderers(boolean force) {
-    EntityModel<?> modelNew = livingEntityRenderer.getModel();
+    EntityModel<LivingEntity> modelNew = livingEntityRenderer.getModel();
     if (!force && modelNew == model) {
       return;
     }
 
     model = modelNew;
-   /* if (model instanceof VillagerModel<?> modelVillager) {
+    if (model instanceof VillagerModel<?> modelVillager) {
+      VillagerModelExtension ext = (VillagerModelExtension) modelVillager;
       head = modelVillager.getHead();
-      body = ((VillagerModelAccessor) modelVillager).villagerBody;
-      rightLeg = modelVillager.rightVillagerLeg;
-      leftLeg = modelVillager.leftVillagerLeg;
-      villagerArms = modelVillager.villagerArms;
-    } else if (model instanceof ModelIllager modelIllager) {
-      head = modelIllager.head;
-      body = modelIllager.body;
-      rightLeg = modelIllager.leg0;
-      leftLeg = modelIllager.leg1;
-      villagerArms = modelIllager.arms;
-      rightArm = modelIllager.rightArm;
-      leftArm = modelIllager.leftArm;
+      body = ext.ebm$getBody();
+      rightLeg = ext.ebm$getRightLeg();
+      leftLeg = ext.ebm$getLeftLeg();
+      villagerArms = ext.ebm$getArms();
+    } else if (model instanceof IllagerModel<?> modelIllager) {
+      IllagerModelExtension ext = (IllagerModelExtension) modelIllager;
+      head = modelIllager.getHead();
+      body = ext.ebm$getBody();
+      rightLeg = ext.ebm$getRightLeg();
+      leftLeg = ext.ebm$getLeftLeg();
+      villagerArms = ext.ebm$getArms();
+      rightArm = ext.ebm$getRightArm();
+      leftArm = ext.ebm$getLeftArm();
       isIllager = true;
-    } else */
-    {
-      if (model instanceof HumanoidModel) {
-        HumanoidModel<?> modelBiped = ((HumanoidModel<?>) model);
-        head = modelBiped.head;
-        body = modelBiped.body;
-        rightLeg = modelBiped.rightLeg;
-        leftLeg = modelBiped.leftLeg;
-        rightArm = modelBiped.rightArm;
-        leftArm = modelBiped.leftArm;
-        villagerArms = null;
-        if (model instanceof PlayerModel) {
-          smallArms = ReflectionExtraBitManipulation.areArmsSmall((PlayerModel<?>) model);
-        }
-      } else {
-        isVex = model instanceof VexModel;
+    } else {
+      HumanoidModel<?> modelBiped = ((HumanoidModel<?>) model);
+      head = modelBiped.head;
+      body = modelBiped.body;
+      rightLeg = modelBiped.rightLeg;
+      leftLeg = modelBiped.leftLeg;
+      rightArm = modelBiped.rightArm;
+      leftArm = modelBiped.leftArm;
+      villagerArms = null;
+      if (model instanceof PlayerModel<?>) {
+        smallArms = ReflectionExtraBitManipulation.areArmsSmall((PlayerModel<?>) model);
       }
     }
+
+    isVex = model instanceof VexModel;
   }
 
   public void clearDisplayListsMap() {
@@ -100,7 +116,8 @@ public class LayerChiseledArmor implements RenderLayer<LivingEntity> {
   private void deleteDisplayLists(List<Integer> displayLists) {
     if (displayLists != null) {
       for (Integer displayList : displayLists) {
-        MemoryTracker.deleteDisplayLists(displayList);
+        GL11.glDeleteLists(displayList, 1);
+//        GLAllocation.deleteDisplayLists(displayList);
       }
     }
   }
@@ -112,150 +129,179 @@ public class LayerChiseledArmor implements RenderLayer<LivingEntity> {
     }
 
     Player player = Minecraft.getInstance().player;
-    return entity.prevPosX + (entity.posX - entity.prevPosX) * partialTicks ==
-        player.prevPosX + (player.posX - player.prevPosX) * partialTicks
-        && entity.prevPosY + (entity.posY - entity.prevPosY) * partialTicks ==
-        player.prevPosY + (player.posY - player.prevPosY) * partialTicks
-        && entity.prevPosZ + (entity.posZ - entity.prevPosZ) * partialTicks ==
-        player.prevPosZ + (player.posZ - player.prevPosZ) * partialTicks;
+    return entity.xOld + (entity.getX() - entity.xOld) * partialTicks ==
+        player.xOld + (player.getX() - player.xOld) * partialTicks
+        && entity.yOld + (entity.getY() - entity.yOld) * partialTicks ==
+        player.yOld + (player.getY() - player.yOld) * partialTicks
+        && entity.zOld + (entity.getZ() - entity.zOld) * partialTicks ==
+        player.zOld + (player.getZ() - player.zOld) * partialTicks;
   }
 
-
   @Override
-  public void doRenderLayer(LivingEntity entity, float limbSwing, float limbSwingAmount,
-                            float partialTicks, float ageInTicks, float netHeadYaw, float headPitch,
-                            float scale) {
+  public void render(PoseStack poseStack, MultiBufferSource multiBufferSource, int k,
+                     LivingEntity entity, float limbSwing, float limbSwingAmount,
+                     float partialTicks, float ageInTicks, float netHeadYaw, float headPitch) {
+    float scale = 1.0f;
     updateModelAndRenderers(false);
-    GlStateManager.enableBlend();
-    GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-    ClientHelper.bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
+    GlStateManager._enableBlend();
+    RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+    ClientHelper.bindTexture(TextureAtlas.LOCATION_BLOCKS);
     LivingEntity entityCap =
-        isPlayerModelAlt(entity, partialTicks) ? Minecraft.getMinecraft().player : entity;
-    IChiseledArmorSlotsHandler cap = entityCap instanceof EntityPlayer ?
-        ChiseledArmorSlotsHandler.getCapability((EntityPlayer) entityCap) : null;
-    List<Integer> displayListsHelmet = getStackDisplayLists(entity, scale, ArmorType.HELMET);
+        isPlayerModelAlt(entity, partialTicks) ? Minecraft.getInstance().player : entity;
+    IChiseledArmorSlotsHandler cap = entityCap instanceof Player ?
+        ChiseledArmorSlotsHandler.getCapability((Player) entityCap).orElse(null) : null;
+    List<Integer> displayListsHelmet =
+        getStackDisplayLists(entity, scale, ArmorType.HELMET, poseStack, multiBufferSource, k,
+            OverlayTexture.NO_OVERLAY, 0);
     List<Integer> displayListsSlotHelmet =
-        getSlotStackDisplayLists(entity, scale, cap, ArmorType.HELMET);
+        getSlotStackDisplayLists(entity, scale, cap, ArmorType.HELMET, poseStack, multiBufferSource,
+            k,
+            OverlayTexture.NO_OVERLAY, 0);
     if (displayListsHelmet != null || displayListsSlotHelmet != null) {
-      GlStateManager.pushMatrix();
+      GL11.glPushMatrix();
       adjustForSneaking(entity);
-      if (entity.isChild() && !(entity instanceof EntityVillager)) {
-        GlStateManager.scale(0.75F, 0.75F, 0.75F);
-        GlStateManager.translate(0.0F, 1.0F, 0.0F);
+      if (entity.isBaby() && !(entity instanceof Villager)) {
+        GL11.glScalef(0.75F, 0.75F, 0.75F);
+        GL11.glTranslatef(0.0F, 1.0F, 0.0F);
       }
-      head.postRender(scale);
-      GlStateManager.translate(0.0F, -scale * (8 + Configs.armorZFightingBufferScale), 0.0F);
-      GlStateManager.rotate(180.0F, 0.0F, 1.0F, 0.0F);
-      GlStateManager.rotate(180.0F, 1.0F, 0.0F, 0.0F);
+      head.translateAndRotate(poseStack);
+//      head.postRender(scale);
+      GL11.glTranslatef(0.0F, -scale * (8 + Configs.armorZFightingBufferScale), 0.0F);
+      GL11.glRotatef(180.0F, 0.0F, 1.0F, 0.0F);
+      GL11.glRotatef(180.0F, 1.0F, 0.0F, 0.0F);
 
-      if (entity instanceof EntityVillager || entity instanceof EntityZombieVillager ||
-          entity instanceof AbstractIllager) {
-        GlStateManager.translate(0.0F, scale * 2, 0.0F);
+      if (entity instanceof Villager || entity instanceof ZombieVillager ||
+          entity instanceof net.minecraft.world.entity.monster.AbstractIllager) {
+        GL11.glTranslatef(0.0F, scale * 2, 0.0F);
       }
 
-      GlStateManager.pushMatrix();
+      GL11.glPushMatrix();
       if (displayListsHelmet != null && (cap == null || !cap.hasArmorType(0))) {
-        GlStateManager.callList(displayListsHelmet.get(0));
+        GL11.glCallList(displayListsHelmet.get(0));
       }
 
-      GlStateManager.popMatrix();
+      GL11.glPopMatrix();
       if (displayListsSlotHelmet != null) {
         for (Integer i : displayListsSlotHelmet) {
-          GlStateManager.callList(i);
+          GL11.glCallList(i);
         }
       }
-      GlStateManager.popMatrix();
+      GL11.glPopMatrix();
     }
     List<Integer> displayListsChestplate =
-        getStackDisplayLists(entity, scale, ArmorType.CHESTPLATE);
+        getStackDisplayLists(entity, scale, ArmorType.CHESTPLATE, poseStack, multiBufferSource, k,
+            OverlayTexture.NO_OVERLAY, 0);
     List<Integer> displayListsSlotChestplate =
-        getSlotStackDisplayLists(entity, scale, cap, ArmorType.CHESTPLATE);
+        getSlotStackDisplayLists(entity, scale, cap, ArmorType.CHESTPLATE, poseStack,
+            multiBufferSource, k,
+            OverlayTexture.NO_OVERLAY, 0);
     if (displayListsChestplate != null || displayListsSlotChestplate != null) {
-      GlStateManager.pushMatrix();
+      GL11.glPushMatrix();
       adjustForSneaking(entity);
       adjustForChildModel();
       boolean isPassive = !isIllager ||
           ((AbstractIllager) entity).getArmPose() == AbstractIllager.IllagerArmPose.CROSSED;
-      GlStateManager.pushMatrix();
+      GL11.glPushMatrix();
       if (displayListsChestplate != null && (cap == null || !cap.hasArmorType(1))) {
-        renderArmorPiece(body, displayListsChestplate.get(0), scale, 8);
-        renderSleeve(displayListsChestplate.get(1), EnumHandSide.RIGHT, scale, isPassive);
-        renderSleeve(displayListsChestplate.get(2), EnumHandSide.LEFT, scale, isPassive);
+        renderArmorPiece(body, poseStack, displayListsChestplate.get(0), scale, 8);
+        renderSleeve(poseStack, displayListsChestplate.get(1), HumanoidArm.RIGHT, scale, isPassive);
+        renderSleeve(poseStack, displayListsChestplate.get(2), HumanoidArm.LEFT, scale, isPassive);
       }
-      GlStateManager.popMatrix();
+      GL11.glPopMatrix();
       if (displayListsSlotChestplate != null) {
         for (int i = 0; i < displayListsSlotChestplate.size(); i += 3) {
-          renderArmorPiece(body, displayListsSlotChestplate.get(i), scale, 8);
-          renderSleeve(displayListsSlotChestplate.get(i + 1), EnumHandSide.RIGHT, scale, isPassive);
-          renderSleeve(displayListsSlotChestplate.get(i + 2), EnumHandSide.LEFT, scale, isPassive);
+          renderArmorPiece(body, poseStack, displayListsSlotChestplate.get(i), scale, 8);
+          renderSleeve(poseStack, displayListsSlotChestplate.get(i + 1), HumanoidArm.RIGHT, scale,
+              isPassive);
+          renderSleeve(poseStack, displayListsSlotChestplate.get(i + 2), HumanoidArm.LEFT, scale,
+              isPassive);
         }
       }
-      GlStateManager.popMatrix();
+      GL11.glPopMatrix();
     }
-    List<Integer> displayListsLeggings = getStackDisplayLists(entity, scale, ArmorType.LEGGINGS);
+    List<Integer> displayListsLeggings =
+        getStackDisplayLists(entity, scale, ArmorType.LEGGINGS, poseStack, multiBufferSource, k,
+            OverlayTexture.NO_OVERLAY, 0);
     List<Integer> displayListsSlotLeggings =
-        getSlotStackDisplayLists(entity, scale, cap, ArmorType.LEGGINGS);
+        getSlotStackDisplayLists(entity, scale, cap, ArmorType.LEGGINGS, poseStack,
+            multiBufferSource, k,
+            OverlayTexture.NO_OVERLAY, 0);
     if (displayListsLeggings != null || displayListsSlotLeggings != null) {
-      GlStateManager.pushMatrix();
+      GL11.glPushMatrix();
       adjustForSneaking(entity);
       adjustForChildModel();
-      GlStateManager.pushMatrix();
+      GL11.glPushMatrix();
       if (displayListsLeggings != null && (cap == null || !cap.hasArmorType(2))) {
-        renderArmorPiece(body, displayListsLeggings.get(0), scale, 4);
-        renderLegPieces(displayListsLeggings.get(1), displayListsLeggings.get(2), scale, 8);
+        renderArmorPiece(body, poseStack, displayListsLeggings.get(0), scale, 4);
+        renderLegPieces(poseStack, displayListsLeggings.get(1), displayListsLeggings.get(2), scale,
+            8);
       }
-      GlStateManager.popMatrix();
+      GL11.glPopMatrix();
       if (displayListsSlotLeggings != null) {
         for (int i = 0; i < displayListsSlotLeggings.size(); i += 3) {
-          renderArmorPiece(body, displayListsSlotLeggings.get(i), scale, 4);
-          renderLegPieces(displayListsSlotLeggings.get(i + 1), displayListsSlotLeggings.get(i + 2),
-              scale, 8);
+          renderArmorPiece(body, poseStack, displayListsSlotLeggings.get(i), scale, 4);
+          renderLegPieces(poseStack, displayListsSlotLeggings.get(i + 1),
+              displayListsSlotLeggings.get(i + 2), scale, 8);
         }
       }
-      GlStateManager.popMatrix();
+      GL11.glPopMatrix();
     }
-    List<Integer> displayListsBoots = getStackDisplayLists(entity, scale, ArmorType.BOOTS);
+    List<Integer> displayListsBoots =
+        getStackDisplayLists(entity, scale, ArmorType.BOOTS, poseStack, multiBufferSource, k,
+            OverlayTexture.NO_OVERLAY, 0);
     List<Integer> displayListsSlotBoots =
-        getSlotStackDisplayLists(entity, scale, cap, ArmorType.BOOTS);
+        getSlotStackDisplayLists(entity, scale, cap, ArmorType.BOOTS, poseStack, multiBufferSource,
+            k,
+            OverlayTexture.NO_OVERLAY, 0);
     if (displayListsBoots != null || displayListsSlotBoots != null) {
-      GlStateManager.pushMatrix();
+      GL11.glPushMatrix();
       adjustForSneaking(entity);
       adjustForChildModel();
-      GlStateManager.translate(0.0F, scale * (Configs.armorZFightingBufferTranslationFeet), 0.0F);
-      GlStateManager.pushMatrix();
+      GL11.glTranslatef(0.0F, scale * (Configs.armorZFightingBufferTranslationFeet), 0.0F);
+      GL11.glPushMatrix();
       if (displayListsBoots != null && (cap == null || !cap.hasArmorType(3))) {
-        renderLegPieces(displayListsBoots.get(0), displayListsBoots.get(1), scale, 4);
+        renderLegPieces(poseStack, displayListsBoots.get(0), displayListsBoots.get(1), scale, 4);
       }
 
-      GlStateManager.popMatrix();
+      GL11.glPopMatrix();
       if (displayListsSlotBoots != null) {
         for (int i = 0; i < displayListsSlotBoots.size(); i += 2) {
-          renderLegPieces(displayListsSlotBoots.get(i), displayListsSlotBoots.get(i + 1), scale, 4);
+          renderLegPieces(poseStack, displayListsSlotBoots.get(i), displayListsSlotBoots.get(i + 1),
+              scale, 4);
         }
       }
 
-      GlStateManager.popMatrix();
+      GL11.glPopMatrix();
     }
-    GlStateManager.disableBlend();
+    GlStateManager._disableBlend();
+
   }
 
   private List<Integer> getStackDisplayLists(LivingEntity entity, float scale,
-                                             ArmorType armorType) {
-    return getDisplayLists(entity, scale, armorType,
-        entity.getItemStackFromSlot(armorType.getEquipmentSlot()), null);
+                                             ArmorType armorType, PoseStack poseStack,
+                                             MultiBufferSource bufferSource, int l, int j,
+                                             int k) {
+    return getDisplayLists(poseStack, bufferSource, l, j, k, entity, scale, armorType,
+        entity.getItemBySlot(armorType.getEquipmentSlot()), null);
   }
 
   private List<Integer> getSlotStackDisplayLists(LivingEntity entity, float scale,
                                                  IChiseledArmorSlotsHandler cap,
-                                                 ArmorType armorType) {
+                                                 ArmorType armorType, PoseStack poseStack,
+                                                 MultiBufferSource bufferSource, int l, int j,
+                                                 int k) {
     if (cap == null || !cap.hasArmor()) {
       return null;
     }
 
-    return getDisplayLists(entity, scale, armorType, ItemStack.EMPTY, cap);
+    return getDisplayLists(poseStack, bufferSource, l, j, k, entity, scale, armorType,
+        ItemStack.EMPTY, cap);
   }
 
-  private List<Integer> getDisplayLists(LivingEntity entity, float scale, ArmorType armorType,
+  private List<Integer> getDisplayLists(PoseStack poseStack, MultiBufferSource bufferSource, int l,
+                                        int j,
+                                        int k, LivingEntity entity, float scale,
+                                        ArmorType armorType,
                                         ItemStack stack, @Nullable IChiseledArmorSlotsHandler cap) {
     List<Integer> displayLists = null;
     int countSet = cap == null ? 1 : ChiseledArmorSlotsHandler.COUNT_SETS;
@@ -267,8 +313,8 @@ public class LayerChiseledArmor implements RenderLayer<LivingEntity> {
 
         stack = cap.getStackInSlot(i * ChiseledArmorSlotsHandler.COUNT_TYPES + armorType.ordinal());
       }
-      if (stack.hasTagCompound() && stack.getItem() instanceof ItemChiseledArmor) {
-        CompoundTag nbt = stack.getTagCompound();
+      if (stack.hasTag() && stack.getItem() instanceof ItemChiseledArmor) {
+        CompoundTag nbt = stack.getTag();
         CompoundTag armoreData = ItemStackHelper.getArmorData(nbt);
         if (!armoreData.getBoolean(NBTKeys.ARMOR_NOT_EMPTY)) {
           continue;
@@ -276,7 +322,9 @@ public class LayerChiseledArmor implements RenderLayer<LivingEntity> {
 
         List<Integer> displayListsItem = movingPartsDisplayListsMap.get(armoreData);
         if (displayListsItem == null) {
-          displayListsItem = addMovingPartsDisplayListsToMap(entity, scale, nbt, armorType);
+          displayListsItem =
+              addMovingPartsDisplayListsToMap(entity, scale, nbt, armorType, poseStack,
+                  bufferSource, l, j, k);
         }
 
         if (displayLists == null) {
@@ -290,85 +338,90 @@ public class LayerChiseledArmor implements RenderLayer<LivingEntity> {
   }
 
   private void adjustForSneaking(LivingEntity entity) {
-    if (entity.isSneaking()) {
-      GlStateManager.translate(0.0F, 0.2F, 0.0F);
+    if (entity.isShiftKeyDown()) {
+      GL11.glTranslatef(0.0F, 0.2F, 0.0F);
     }
   }
 
   private void adjustForChildModel() {
-    if (model.isChild) {
-      GlStateManager.translate(0.0F, 0.75F, 0.0F);
-      GlStateManager.scale(0.5F, 0.5F, 0.5F);
+
+    if ((model instanceof EntityModel<?> entityModel) && entityModel.young) {
+      GL11.glTranslatef(0.0F, 0.75F, 0.0F);
+      GL11.glScalef(0.5F, 0.5F, 0.5F);
     }
   }
 
   private List<Integer> addMovingPartsDisplayListsToMap(LivingEntity entity, float scale,
-                                                        CompoundTag armorNbt,
-                                                        ArmorType armorType) {
+                                                        CompoundTag armorNbt, ArmorType armorType,
+                                                        PoseStack poseStack,
+                                                        MultiBufferSource bufferSource, int l,
+                                                        int j,
+                                                        int k) {
     List<Integer> movingPartsDisplayLists = new ArrayList<>();
     for (int i = 0; i < armorType.getMovingpartCount(); i++) {
       movingPartsDisplayLists.add(
-          new DataChiseledArmorPiece(armorNbt, armorType).generateDisplayList(i, entity, scale));
+          new DataChiseledArmorPiece(armorNbt, armorType).generateDisplayList(i, entity, scale,
+              poseStack, bufferSource, l, j, k));
     }
 
     movingPartsDisplayListsMap.put(ItemStackHelper.getArmorData(armorNbt), movingPartsDisplayLists);
     return movingPartsDisplayLists;
   }
 
-  private void renderLegPieces(int displayListRight, int displayListLeft, float scale,
+  private void renderLegPieces(PoseStack poseStack, int displayListRight, int displayListLeft,
+                               float scale,
                                float offsetY) {
-    renderArmorPiece(rightLeg, displayListRight, scale, isVex ? -scale * 2 : 0.0F, offsetY);
+    renderArmorPiece(rightLeg, poseStack, displayListRight, scale, isVex ? -scale * 2 : 0.0F,
+        offsetY);
     if (!isVex) {
-      renderArmorPiece(leftLeg, displayListLeft, scale, offsetY);
+      renderArmorPiece(leftLeg, poseStack, displayListLeft, scale, offsetY);
     }
   }
 
-  private void renderArmorPiece(ModelRenderer modelArmorPiece, int displayList, float scale,
+  private void renderArmorPiece(ModelPart modelArmorPiece, PoseStack poseStack, int displayList,
+                                float scale,
                                 float offsetX, float offsetY) {
-    GlStateManager.pushMatrix();
-    modelArmorPiece.postRender(scale);
+    GL11.glPushMatrix();
+    modelArmorPiece.translateAndRotate(poseStack);
     renderArmorPiece(displayList, scale, offsetX, offsetY);
   }
 
-  private void renderArmorPiece(ModelRenderer modelArmorPiece, int displayList, float scale,
+  private void renderArmorPiece(ModelPart modelArmorPiece, PoseStack poseStack, int displayList,
+                                float scale,
                                 float offsetY) {
-    renderArmorPiece(modelArmorPiece, displayList, scale, 0.0F, offsetY);
+    renderArmorPiece(modelArmorPiece, poseStack, displayList, scale, 0.0F, offsetY);
   }
 
   private void renderArmorPiece(int displayList, float scale, float offsetX, float offsetY) {
-    GlStateManager.rotate(180.0F, 0.0F, 0.0F, 1.0F);
-    GlStateManager.translate(offsetX, -scale * offsetY, 0.0F);
-    GlStateManager.callList(displayList);
-    GlStateManager.popMatrix();
+    GL11.glRotatef(180.0F, 0.0F, 0.0F, 1.0F);
+    GL11.glTranslatef(offsetX, -scale * offsetY, 0.0F);
+    GL11.glCallList(displayList);
+    GL11.glPopMatrix();
   }
 
-  private void renderSleeve(int displayList, EnumHandSide handSide, float scale,
+  private void renderSleeve(PoseStack poseStack, int displayList, HumanoidArm handSide, float scale,
                             boolean isPassive) {
-    GlStateManager.pushMatrix();
+    GL11.glPushMatrix();
     int armOffset;
     if (villagerArms != null && isPassive) {
-      villagerArms.postRender(scale);
+      villagerArms.translateAndRotate(poseStack);
       armOffset = 6;
     } else {
-      ModelRenderer modelArm = handSide == EnumHandSide.RIGHT ? rightArm : leftArm;
+      ModelPart modelArm = handSide == HumanoidArm.RIGHT ? rightArm : leftArm;
       if (smallArms) {
-        float f = handSide == EnumHandSide.RIGHT ? -0.5F : 0.5F;
-        modelArm.rotationPointX += f;
-        ((ModelBiped) model).postRenderArm(scale, handSide);
-        modelArm.rotationPointX -= f;
+        float f = handSide == HumanoidArm.RIGHT ? -0.5F : 0.5F;
+        modelArm.xRot += f;
+        ((HumanoidModel<?>) model).translateToHand(handSide, poseStack);
+        modelArm.xRot -= f;
       } else {
-        modelArm.postRender(scale);
+        modelArm.translateAndRotate(poseStack);
       }
 
       armOffset = 1;
     }
     renderArmorPiece(displayList, scale,
-        (handSide == EnumHandSide.LEFT ? -armOffset : armOffset) * scale, 6);
+        (handSide == HumanoidArm.LEFT ? -armOffset : armOffset) * scale, 6);
   }
 
-  @Override
-  public boolean shouldCombineTextures() {
-    return false;
-  }
 
 }

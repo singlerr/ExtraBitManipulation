@@ -9,33 +9,36 @@ import java.util.List;
 import net.minecraft.CrashReport;
 import net.minecraft.CrashReportCategory;
 import net.minecraft.CrashReportDetail;
+import net.minecraft.ReportedException;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.BlockModelShaper;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.init.Blocks;
+import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.ReportedException;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
-import net.minecraftforge.client.ForgeHooksClient;
-import net.minecraftforge.client.model.pipeline.LightUtil;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import org.lwjgl.opengl.GL11;
 
 public class RenderState {
   private static final ResourceLocation RES_ITEM_GLINT =
       new ResourceLocation("textures/misc/enchanted_item_glint.png");
 
+  private static final RandomSource RANDOM = RandomSource.create();
+
   public static void renderStateIntoGUI(final BlockState state, int x, int y) {
     BlockModelShaper blockModelShapes = ClientHelper.getBlockModelShapes();
-    IBakedModel model = blockModelShapes.getModelForState(state);
+    BakedModel model = blockModelShapes.getBlockModel(state);
     boolean emptyModel;
     try {
       boolean missingModel = isMissingModel(blockModelShapes, model);
-      emptyModel = missingModel || model.getQuads(state, null, 0L).isEmpty();
+      emptyModel = missingModel || model.getQuads(state, null, RANDOM).isEmpty();
       if (!missingModel && emptyModel) {
-        for (EnumFacing enumfacing : EnumFacing.values()) {
+        for (Direction enumfacing : Direction.values()) {
           if (!model.getQuads(state, enumfacing, 0L).isEmpty()) {
             emptyModel = false;
             break;
@@ -66,7 +69,7 @@ public class RenderState {
         }
       }
     }
-    boolean renderAsTileEntity = !stack.isEmpty() && (model.isBuiltInRenderer() || isVanillaChest);
+    boolean renderAsTileEntity = !stack.isEmpty() && (!model.isCustomRenderer() || isVanillaChest);
     try {
       renderStateModelIntoGUI(state, model, stack, renderAsTileEntity, x, y, 0, 0, -1);
     } catch (Throwable throwable) {
@@ -111,27 +114,27 @@ public class RenderState {
     }
   }
 
-  public static IBakedModel getItemModelWithOverrides(ItemStack stack) {
+  public static BakedModel getItemModelWithOverrides(ItemStack stack) {
     return ClientHelper.getRenderItem()
-        .getItemModelWithOverrides(stack, null, ClientHelper.getPlayer());
+        .getModel(stack, null, ClientHelper.getPlayer(), 0);
   }
 
   private static boolean isNullItem(final Block block, ItemStack stack) {
     return stack.getItem() == null || block == Blocks.STANDING_BANNER || block == Blocks.BARRIER;
   }
 
-  private static boolean isMissingModel(BlockModelShaper blockModelShapes, IBakedModel model) {
+  private static boolean isMissingModel(BlockModelShaper blockModelShapes, BakedModel model) {
     return model.equals(blockModelShapes.getModelManager().getMissingModel());
   }
 
-  public static void renderStateModelIntoGUI(BlockState state, IBakedModel model, ItemStack stack,
+  public static void renderStateModelIntoGUI(BlockState state, BakedModel model, ItemStack stack,
                                              boolean renderAsTileEntity, int x, int y, float angleX,
                                              float angleY, float scale) {
     renderStateModelIntoGUI(state, model, stack, 1.0F, false, renderAsTileEntity, x, y, angleX,
         angleY, scale);
   }
 
-  public static void renderStateModelIntoGUI(BlockState state, IBakedModel model, ItemStack stack,
+  public static void renderStateModelIntoGUI(BlockState state, BakedModel model, ItemStack stack,
                                              float alphaMultiplier,
                                              boolean transformFroGui, boolean renderAsTileEntity,
                                              int x, int y, float angleX, float angleY,
@@ -161,7 +164,7 @@ public class RenderState {
     textureManager.getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
   }
 
-  public static void renderState(BlockState state, IBakedModel model, ItemStack stack,
+  public static void renderState(BlockState state, BakedModel model, ItemStack stack,
                                  float alphaMultiplier, boolean renderAsTileEntity, float angleX,
                                  float angleY, float scale) {
     boolean autoScale = scale < 0;
@@ -214,7 +217,7 @@ public class RenderState {
             }
           }
         }
-        for (EnumFacing enumfacing : EnumFacing.values()) {
+        for (Direction enumfacing : Direction.values()) {
           for (BakedQuad quad : model.getQuads(state, enumfacing, 0L)) {
             size = quad.getFormat().getIntegerSize();
             data = quad.getVertexData();
@@ -281,7 +284,7 @@ public class RenderState {
     GlStateManager.popMatrix();
   }
 
-  private static void setupGuiTransform(int x, int y, IBakedModel model) {
+  private static void setupGuiTransform(int x, int y, BakedModel model) {
     GlStateManager.translate(x + 6, y + 2, 100.0F + ClientHelper.getRenderItem().zLevel + 400);
     GlStateManager.translate(8.0F, 8.0F, 0.0F);
     GlStateManager.scale(1.0F, -1.0F, 1.0F);
@@ -293,13 +296,13 @@ public class RenderState {
     }
   }
 
-  private static void renderModel(BlockState state, IBakedModel model, int color,
+  private static void renderModel(BlockState state, BakedModel model, int color,
                                   float alphaMultiplier, ItemStack stack) {
     Tesselator tessellator = Tesselator.getInstance();
     BufferBuilder buffer = tessellator.getBuilder();
     buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.ITEM);
     try {
-      for (EnumFacing enumfacing : EnumFacing.values()) {
+      for (Direction enumfacing : Direction.values()) {
         renderQuads(buffer, model.getQuads(state, enumfacing, 0L), color, alphaMultiplier, stack);
       }
 
@@ -310,7 +313,7 @@ public class RenderState {
     }
   }
 
-  private static void renderEffect(BlockState state, IBakedModel model) {
+  private static void renderEffect(BlockState state, BakedModel model) {
     GlStateManager.depthMask(false);
     GlStateManager.depthFunc(514);
     GlStateManager.disableLighting();

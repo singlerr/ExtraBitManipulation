@@ -20,7 +20,7 @@ public abstract class PartDefinitionMixin implements PartDefinitionExtension {
 
   @Unique
   @Final
-  private List<Consumer<ModelPart>> onBakeListeners = new ArrayList<>();
+  private final List<Consumer<ModelPart>> onBakeListeners = new ArrayList<>();
 
   @Inject(method = "bake", at = @At(value = "INVOKE_ASSIGN", target = "Lnet/minecraft/client/model/geom/ModelPart;loadPose(Lnet/minecraft/client/model/geom/PartPose;)V"), locals = LocalCapture.CAPTURE_FAILEXCEPTION)
   private void ebm$onBake(int i, int j, CallbackInfoReturnable<ModelPart> cir,

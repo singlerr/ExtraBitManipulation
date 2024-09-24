@@ -23,6 +23,10 @@ public class PacketOpenBitMappingGui extends PacketEmpty {
     super(buffer);
   }
 
+  public PacketOpenBitMappingGui() {
+    super();
+  }
+
   @Override
   public PacketType<?> getType() {
     return PACKET_TYPE;

@@ -26,7 +26,7 @@ public class PacketBitParticles implements FabricPacket {
       PacketType.create(new ResourceLocation(
           Reference.MOD_ID, "bit_particles"), PacketBitParticles::new);
 
-  private int flag;
+  private final int flag;
   private Vec3 locBit, locEntity;
   private double width, height;
 
