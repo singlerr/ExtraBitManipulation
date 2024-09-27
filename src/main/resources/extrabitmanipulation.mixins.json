@@ -17,7 +17,8 @@
     "mixin.PartDefinitionMixin",
     "mixin.TextureAtlasMixin",
     "mixin.VillagerModelMixin",
-    "mixin.IllagerModelMixin"
+    "mixin.IllagerModelMixin",
+    "mixin.AbstractTextureMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -1,7 +1,7 @@
 package com.phylogeny.extrabitmanipulation.helper;
 
-import com.phylogeny.extrabitmanipulation.ExtraBitManipulation;
 import com.phylogeny.extrabitmanipulation.api.ChiselsAndBitsAPIAccess;
+import com.phylogeny.extrabitmanipulation.client.gui.MenuProviderDelegate;
 import com.phylogeny.extrabitmanipulation.helper.BitToolSettingsHelper.ModelReadData;
 import com.phylogeny.extrabitmanipulation.item.ItemModelingTool;
 import com.phylogeny.extrabitmanipulation.reference.GuiIDs;
@@ -13,6 +13,7 @@ import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.DoubleTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -116,8 +117,7 @@ public class BitAreaHelper {
     BitIOHelper.saveBlockStates(ChiselsAndBitsAPIAccess.apiInstance, player, world,
         boxSet.getBoundingBox(), nbt);
     if (modelingData.getGuiOpen()) {
-      player.openMenu(ExtraBitManipulation.instance, GuiIDs.BIT_MAPPING.getID(), player.world, 0, 0,
-          0);
+      player.openMenu(new MenuProviderDelegate(Component.empty(), GuiIDs.BIT_MAPPING.getID()));
     }
 
     return true;

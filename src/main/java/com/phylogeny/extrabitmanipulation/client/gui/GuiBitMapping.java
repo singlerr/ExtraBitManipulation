@@ -334,29 +334,29 @@ public class GuiBitMapping extends ContainerScreen {
     return Minecraft.getInstance().player.getMainHandItem();
   }
 
-  @Override
+
   public int getGuiLeft() {
-    return guiLeft + 24;
+    return leftPos + 24;
   }
 
   @Override
-  public void initGui() {
-    super.initGui();
-    guiLeft -= 12;
-    int l = guiLeft + 128;
-    int t = guiTop + 21;
+  protected void init() {
+    super.init();
+    leftPos -= 12;
+    int l = leftPos + 128;
+    int t = topPos + 21;
     previewStackBox = new AABB(l, t, -1, l + 107, t + 100, 1);
-    searchField = new GuiTextField(6, fontRenderer, guiLeft + 44, guiTop + 8, 65, 9);
-    searchField.setEnableBackgroundDrawing(false);
+    searchField = new EditBox(font, 6, leftPos + 44, topPos + 8, 65, Component.empty());
+//    searchField.setEnableBackgroundDrawing(false);
     searchField.setTextColor(-1);
-    searchField.setText(searchText);
+    searchField.setValue(searchText);
     int slotHeight = 24;
     if (designMode) {
       stateToBitMapPermanent = new HashMap<BlockState, IBitBrush>();
       blockToBitMapPermanent = new HashMap<BlockState, IBitBrush>();
       initDesignMode();
       String buttonText = "Save Changes";
-      int buttonWidth = fontRenderer.getStringWidth(buttonText) + 6;
+      int buttonWidth = font.width(buttonText) + 6;
       buttonList.add(
           new GuiButtonExt(0, guiLeft + xSize - buttonWidth - 5, guiTop + 5, buttonWidth, 14,
               buttonText));
@@ -371,7 +371,7 @@ public class GuiBitMapping extends ContainerScreen {
         buttonSettings.selected = true;
       }
 
-      int y = guiTop + 44;
+      int y = topPos + 44;
       int offsetY = 19;
       String hovertext = "Overwrite mappings saved in 1 with the mappings saved in 2";
       String stackText = "this Modeling Tool's NBT";

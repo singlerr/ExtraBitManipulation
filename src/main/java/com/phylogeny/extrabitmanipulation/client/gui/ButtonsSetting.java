@@ -1,6 +1,5 @@
 package com.phylogeny.extrabitmanipulation.client.gui;
 
-import com.phylogeny.extrabitmanipulation.ExtraBitManipulation;
 import com.phylogeny.extrabitmanipulation.client.ClientHelper;
 import com.phylogeny.extrabitmanipulation.client.gui.GuiBitToolSettingsMenu.GuiButtonSetting;
 import com.phylogeny.extrabitmanipulation.helper.BitToolSettingsHelper;
@@ -12,6 +11,7 @@ import com.phylogeny.extrabitmanipulation.reference.Configs;
 import com.phylogeny.extrabitmanipulation.reference.NBTKeys;
 import java.util.ArrayList;
 import java.util.List;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -54,7 +54,7 @@ public abstract class ButtonsSetting {
   protected GuiButtonSetting getTargetButton() {
     GuiButtonSetting buttonTarget = null;
     for (GuiButtonSetting button : buttons) {
-      if (button.isMouseOver()) {
+      if (button.isHovered()) {
         buttonTarget = button;
       }
     }
@@ -91,7 +91,7 @@ public abstract class ButtonsSetting {
 
     @Override
     protected void setValue(Player player, int value) {
-      ExtraBitManipulation.packetNetwork.sendToServer(new PacketSetWrechMode(value));
+      ClientPlayNetworking.send(new PacketSetWrechMode(value));
     }
 
   }

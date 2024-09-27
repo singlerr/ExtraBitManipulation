@@ -68,6 +68,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.Model;
 import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.LivingEntityRenderer;
@@ -94,7 +95,6 @@ import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.util.glu.Cylinder;
 import org.lwjgl.util.glu.Disk;
-import org.lwjgl.util.glu.GLU;
 import org.lwjgl.util.glu.Quadric;
 import org.lwjgl.util.glu.Sphere;
 
@@ -811,6 +811,9 @@ public class ClientEventHandler {
     Player player = ClientHelper.getPlayer();
     Level world = player.level();
     ItemStack stack = player.getMainHandItem();
+    PoseStack poseStack = context.matrixStack();
+    RenderType renderType = ItemBlockRenderTypes.getRenderType(stack, false);
+    VertexConsumer vertexConsumer = context.consumers().getBuffer(renderType);
     if (stack.isEmpty()) {
       return;
     }
@@ -835,7 +838,8 @@ public class ClientEventHandler {
       if (nbt.contains(NBTKeys.ARMOR_HIT)) {
         ArmorBodyPartTemplateBoxData boxData =
             new ArmorBodyPartTemplateBoxData(nbt, (ItemChiseledArmor) item);
-        renderBodyPartTemplate(playerX, playerY, playerZ, boxData.getFacingBox(), t, buffer,
+        renderBodyPartTemplate(poseStack, vertexConsumer, playerX, playerY, playerZ,
+            boxData.getFacingBox(), t, buffer,
             boxData.getBox(), 0.0F);
       }
       if (!hitBlock) {
@@ -878,13 +882,13 @@ public class ClientEventHandler {
 
 
       boolean invertDirection = KeyBindingsExtraBitManipulation.SHIFT.isKeyDown();
-      GL11.glPushMatrix();
+      poseStack.pushPose();
       GlStateManager.disableLighting();
       GlStateManager.enableAlpha();
       GlStateManager._enableBlend();
       GlStateManager.blendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
       GlStateManager.enableTexture2D();
-      GL11.glPushMatrix();
+      poseStack.pushPose();
       double angle = getInitialAngle(mode);
       if (mode == 3) {
         if (side % 2 == 1) {
@@ -933,7 +937,7 @@ public class ClientEventHandler {
           mirTravel2);
 
 
-      Minecraft.getInstance().getTextureManager().bindTexture(mode == 0 ? ARROW_CYCLICAL
+      RenderSystem.setShaderTexture(0, mode == 0 ? ARROW_CYCLICAL
           : (mode == 1 ? ARROW_BIDIRECTIONAL : (mode == 2 ? CIRCLE : INVERSION)));
       float minU = 0;
       float maxU = 1;
@@ -953,12 +957,12 @@ public class ClientEventHandler {
       }
 
       renderTexturedSide(t, buffer, side, northSouth, box, minU, maxU, minV, maxV, 1);
-      GL11.glPopMatrix();
+      poseStack.popPose();
 
       AABB box3 = world.getBlockState(pos).getBlockSupportShape(world, pos).bounds();
       for (int s = 0; s < 6; s++) {
         if (s != side) {
-          GL11.glPushMatrix();
+          poseStack.pushPose();
           upDown = s <= 1;
           eastWest = s >= 4;
 
@@ -978,7 +982,8 @@ public class ClientEventHandler {
             oppRotation = dir == Direction.from3DDataValue(side).getOpposite();
             if (mode == 0) {
               if (!oppRotation) {
-                Minecraft.getInstance().renderEngine.bindTexture(ARROW_HEAD);
+                RenderSystem.setShaderTexture(0, ARROW_HEAD);
+//                Minecraft.getInstance().renderEngine.bindTexture(ARROW_HEAD);
                 angle = 90;
                 if (side % 2 == 0) {
                   angle += 180;
@@ -990,12 +995,14 @@ public class ClientEventHandler {
 
                 mode2 = 2;
               } else {
-                Minecraft.getInstance().renderEngine.bindTexture(ARROW_CYCLICAL);
+                RenderSystem.setShaderTexture(0, ARROW_CYCLICAL);
+//                Minecraft.getInstance().renderEngine.bindTexture(ARROW_CYCLICAL);
                 mode2 = 0;
               }
             } else if (mode == 2) {
               if (!oppRotation) {
-                Minecraft.getInstance().renderEngine.bindTexture(ARROW_HEAD);
+                RenderSystem.setShaderTexture(0, ARROW_HEAD);
+//                Minecraft.getInstance().renderEngine.bindTexture(ARROW_HEAD);
                 if (side == 0 ? s == 2 || s == 5 :
                     (side == 1 ? s == 3 || s == 4 : (side == 2 ? s == 1 || s == 5
                         : (side == 3 ? s == 0 || s == 4 :
@@ -1007,7 +1014,8 @@ public class ClientEventHandler {
                   angle += 180;
                 }
               } else {
-                Minecraft.getInstance().renderEngine.bindTexture(CIRCLE);
+                RenderSystem.setShaderTexture(0, CIRCLE);
+//                Minecraft.getInstance().renderEngine.bindTexture(CIRCLE);
               }
             }
           }
@@ -1089,14 +1097,14 @@ public class ClientEventHandler {
             renderTexturedSide(t, buffer, s, northSouth, box, minU, maxU, minV, maxV, 1);
           }
 
-          GL11.glPopMatrix();
+          poseStack.popPose();
         }
       }
 
       GlStateManager.enableLighting();
       GlStateManager.disableBlend();
       GlStateManager.enableTexture2D();
-      GL11.glPopMatrix();
+      poseStack.popPose();
     } else if (ItemStackHelper.isSculptingToolItem(item)) {
       ItemSculptingTool toolItem = (ItemSculptingTool) item;
       boolean removeBits = toolItem.removeBits();
@@ -1130,7 +1138,7 @@ public class ClientEventHandler {
           double y3 = y + y2 * Utility.PIXEL_D;
           double z3 = z + z2 * Utility.PIXEL_D;
           if (configBox.renderInnerShape || configBox.renderOuterShape) {
-            GL11.glPushMatrix();
+            poseStack.pushPose();
             GL11.glLineWidth(configBox.lineWidth);
             boolean inside = ItemSculptingTool.wasInsideClicked(dir, hit, pos);
             if (drawnBox) {
@@ -1214,7 +1222,7 @@ public class ClientEventHandler {
                   configBox.red, configBox.green, configBox.blue, configBox.innerShapeAlpha);
               RenderSystem.depthFunc(GL11.GL_LEQUAL);
             }
-            GL11.glPopMatrix();
+            poseStack.popPose();
           }
           if (!fixedNotSym && box != null) {
             shapeBox = box.inflate(0);
@@ -1241,9 +1249,11 @@ public class ClientEventHandler {
           BitToolSettingsHelper.getModelAreaMode(stack.getTag()),
           BitToolSettingsHelper.getModelSnapMode(stack.getTag()));
       if (!boxSet.isEmpty()) {
-        renderBoundingBox(boxSet.getBoundingBox().move(-playerX, -playerY, -playerZ), 1, 1, 1, 115);
+        renderBoundingBox(poseStack, vertexConsumer,
+            boxSet.getBoundingBox().move(-playerX, -playerY, -playerZ), 1, 1, 1, 115);
         if (boxSet.hasPoint()) {
-          renderBoundingBox(boxSet.getPoint().move(-playerX, -playerY, -playerZ), 1, 1, 1, 155);
+          renderBoundingBox(poseStack, vertexConsumer,
+              boxSet.getPoint().move(-playerX, -playerY, -playerZ), 1, 1, 1, 155);
         }
       }
       glEnd();
@@ -1257,12 +1267,14 @@ public class ClientEventHandler {
               BitToolSettingsHelper.getArmorScale(nbt),
               BitToolSettingsHelper.getArmorMovingPart(nbt, (ItemChiseledArmor) item));
           if (box != null) {
-            renderBodyPartTemplate(playerX, playerY, playerZ, facingBox, t, buffer, box, 1.0F);
+            renderBodyPartTemplate(poseStack, vertexConsumer, playerX, playerY, playerZ, facingBox,
+                t, buffer, box, 1.0F);
           }
         } else {
           glStart();
-          renderBoundingBox(getDrawnArmorCollectionBox(player, nbt, dir, pos, hit)
-              .move(-playerX, -playerY, -playerZ).inflate(BOUNDING_BOX_OFFSET), 0, 0, 0, 155);
+          renderBoundingBox(poseStack, vertexConsumer,
+              getDrawnArmorCollectionBox(player, nbt, dir, pos, hit)
+                  .move(-playerX, -playerY, -playerZ).inflate(BOUNDING_BOX_OFFSET), 0, 0, 0, 155);
           glEnd();
         }
       }
@@ -1340,13 +1352,14 @@ public class ClientEventHandler {
     return new AABB(x4, y4, z4, x3, y3, z3);
   }
 
-  private static void renderBodyPartTemplate(double playerX, double playerY, double playerZ,
+  private static void renderBodyPartTemplate(PoseStack poseStack, VertexConsumer vertexConsumer,
+                                             double playerX, double playerY, double playerZ,
                                              Direction facingBox, Tesselator t,
                                              BufferBuilder buffer,
                                              AABB box, float redBlue) {
     glStart();
     box = box.move(-playerX, -playerY, -playerZ).inflate(BOUNDING_BOX_OFFSET);
-    renderBoundingBox(box, redBlue, 1, redBlue, 155);
+    renderBoundingBox(poseStack, vertexConsumer, box, redBlue, 1, redBlue, 155);
     for (Direction face : Direction.values()) {
       boolean isFront = face == facingBox;
       if (isFront) {
@@ -1525,9 +1538,9 @@ public class ClientEventHandler {
 
       Quadric shape = shapeType > 2 ? new Prism(shapeType > 4, shapeType == 4 || shapeType == 5) :
           (notFullSym ? new Cylinder() : new Sphere());
-      shape.setDrawStyle(GLU.GLU_LINE);
+      shape.setDrawStyle(Quadric.GLU_LINE);
       Quadric lid = new Disk();
-      lid.setDrawStyle(GLU.GLU_LINE);
+      lid.setDrawStyle(Quadric.GLU_LINE);
       GL11.glPushMatrix();
       GL11.glLineWidth(configShape.lineWidth);
       double x2 = x - playerX;
